@@ -1,0 +1,931 @@
+@import "tailwindcss";
+
+/* ---------------------------------------------------------------------------
+   Card Binder design tokens.
+
+   The page is a binder sitting on a desk: card-stock cream, binder-cover navy,
+   and the grey-blue of a polypropylene sleeve. Committed single light theme —
+   photographs of people read better on warm stock than on dark chrome, and it
+   reserves darkness for the one moment that should feel theatrical (opening a
+   pack), which gets its own scoped surface below.
+--------------------------------------------------------------------------- */
+
+@theme {
+  --color-ink: #14213d; /* binder cover navy — text and furniture */
+  --color-ink-soft: #465575;
+  --color-stock: #f5f0e6; /* card stock cream — the page ground */
+  --color-stock-deep: #e8e0cf;
+  --color-sleeve: #dfe4e8; /* PVC sleeve grey-blue — the pockets */
+  --color-sleeve-edge: #c3ccd4;
+  --color-pool: #2ec4d6; /* summer pool cyan — interaction */
+  --color-pool-deep: #17879a;
+  --color-sun: #f5a524; /* SummerHacks amber — fills and borders only */
+  /* Amber is 1.8:1 on stock, so it can never carry text. This is the same hue
+     darkened to clear 4.5:1, for anywhere amber needs to be legible as type. */
+  --color-sun-ink: #7d4d03;
+  --color-stamp: #c4304b; /* serial ink — used tiny and rarely */
+
+  --font-display: var(--font-display), ui-sans-serif, system-ui, sans-serif;
+  --font-body: var(--font-body), Georgia, serif;
+  --font-mono: var(--font-mono), ui-monospace, monospace;
+}
+
+:root {
+  color-scheme: light;
+
+  /* Border variant palettes. Each is [mat, rule, plate] for one card frame. */
+  --variant-amber: #f5a524;
+  --variant-amber-deep: #8a5504;
+  --variant-cyan: #2ec4d6;
+  --variant-cyan-deep: #0d5f6b;
+  --variant-violet: #9b7bf0;
+  --variant-violet-deep: #422a86;
+  --variant-rose: #f0708f;
+  --variant-rose-deep: #7d1b34;
+  --variant-lime: #a9d143;
+  --variant-lime-deep: #445c0c;
+  --variant-slate: #94a3b8;
+  --variant-slate-deep: #33415c;
+}
+
+body {
+  background-color: var(--color-stock);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+}
+
+/* Every focusable thing gets the same unmissable ring. */
+:focus-visible {
+  outline: 3px solid var(--color-pool-deep);
+  outline-offset: 2px;
+}
+
+@layer components {
+  /* -----------------------------------------------------------------------
+     Eyebrow / label: mono, spaced, small. Used for set codes, counts, filters.
+  ----------------------------------------------------------------------- */
+  .label {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .display {
+    font-family: var(--font-display);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 0.95;
+  }
+
+  /* -----------------------------------------------------------------------
+     THE BINDER PAGE
+
+     A real nine-pocket page: rings punched down the left margin, welded seams
+     between pockets, and empty pockets left visible. The empty pockets are the
+     point — they are what makes a half-full pack look like an invitation.
+  ----------------------------------------------------------------------- */
+  .binder {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.75rem;
+    background-color: var(--color-sleeve);
+    border: 1px solid var(--color-sleeve-edge);
+    border-radius: 0.5rem;
+    padding: 0.75rem 0.75rem 0.75rem 0.5rem;
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.7),
+      0 1px 2px rgb(20 33 61 / 0.08),
+      0 12px 32px -12px rgb(20 33 61 / 0.25);
+  }
+
+  /* Ring holes. Decorative, so hidden from assistive tech at the markup level. */
+  .binder__rings {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-evenly;
+    gap: 1rem;
+    padding-block: 1.5rem;
+  }
+
+  /* Punched holes: a light page showing through a recessed opening. Needs real
+     size and a real inner shadow or it reads as a speck of dust. */
+  .binder__ring {
+    width: 0.9rem;
+    height: 0.9rem;
+    border-radius: 50%;
+    background-color: var(--color-stock);
+    box-shadow:
+      inset 0 2px 3px rgb(20 33 61 / 0.55),
+      inset 0 -1px 1px rgb(20 33 61 / 0.2),
+      0 1px 0 rgb(255 255 255 / 0.9);
+  }
+
+  .binder__pockets {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    /* The seams between pockets are the sleeve showing through. */
+    gap: 1px;
+    background-color: var(--color-sleeve-edge);
+    border: 1px solid var(--color-sleeve-edge);
+  }
+
+  .pocket {
+    position: relative;
+    aspect-ratio: 5 / 7;
+    background-color: color-mix(in srgb, var(--color-sleeve) 88%, white);
+    padding: 6%;
+    /* The faint sheen of plastic catching the light. */
+    background-image: linear-gradient(
+      118deg,
+      rgb(255 255 255 / 0.55) 0%,
+      rgb(255 255 255 / 0) 32%,
+      rgb(255 255 255 / 0) 68%,
+      rgb(255 255 255 / 0.3) 100%
+    );
+  }
+
+  /* Badges a card in the unfiltered view as one you hold, so the "Yours" filter
+     isn't the only way to tell. */
+  .pocket__mine {
+    position: absolute;
+    left: 6%;
+    bottom: 6%;
+    z-index: 2;
+    font-family: var(--font-mono);
+    font-size: 0.5rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 0.2em 0.45em;
+    border-radius: 999px;
+    background-color: var(--color-ink);
+    color: var(--color-stock);
+    pointer-events: none;
+  }
+
+  .pocket--empty::after {
+    content: "";
+    position: absolute;
+    inset: 6%;
+    border: 1px dashed var(--color-sleeve-edge);
+    border-radius: 0.25rem;
+  }
+
+  /* A card that has just arrived over Realtime. */
+  .pocket--fresh .card-shell {
+    animation: pocket-slide 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+
+  @keyframes pocket-slide {
+    from {
+      opacity: 0;
+      transform: translateY(-8%) scale(0.94);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  /* -----------------------------------------------------------------------
+     THE CARD
+
+     Layered like a printed card: outer rule, coloured mat, keylined art window,
+     nameplate over a scrim, flavour strip, stamped serial. The photo itself is
+     untouched — the framing is what turns it into a card.
+  ----------------------------------------------------------------------- */
+  .card-shell {
+    /* Perspective lives here so both faces share one vanishing point. */
+    position: relative;
+    display: block;
+    width: 100%;
+    aspect-ratio: 5 / 7;
+    perspective: 1100px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Redundant control for pointer users, primary control for everyone else. It
+     stays in the accessibility tree and stays focusable at all times; it only
+     becomes visible on hover or focus so a nine-up grid isn't peppered with
+     icons. */
+  .card__flip {
+    position: absolute;
+    top: 5%;
+    right: 5%;
+    z-index: 2;
+    width: 1.75rem;
+    height: 1.75rem;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--variant-deep);
+    border-radius: 50%;
+    background-color: color-mix(in srgb, var(--color-stock) 90%, transparent);
+    color: var(--color-ink);
+    font-size: 0.8rem;
+    line-height: 1;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+
+  .card-shell:hover .card__flip,
+  .card__flip:focus-visible {
+    opacity: 1;
+  }
+
+  .card {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transform-style: preserve-3d;
+    transition: transform 0.55s cubic-bezier(0.3, 0.9, 0.2, 1);
+    /* --rx/--ry come from the pointer; --flip is 0 or 180deg. */
+    transform: rotateX(var(--rx, 0deg))
+      rotateY(calc(var(--ry, 0deg) + var(--flip, 0deg)));
+  }
+
+  .card-shell[data-flipped="true"] .card {
+    --flip: 180deg;
+  }
+
+  /* While the pointer is on the card, tilt should track it with no easing lag. */
+  .card-shell[data-tilting="true"] .card {
+    transition: none;
+  }
+
+  .card__face {
+    position: absolute;
+    inset: 0;
+    backface-visibility: hidden;
+    border-radius: 0.45rem;
+    overflow: hidden;
+    /* Outer rule, then the coloured mat. */
+    border: 1px solid var(--variant-deep);
+    background-color: var(--variant);
+    box-shadow: 0 2px 6px -1px rgb(20 33 61 / 0.35);
+  }
+
+  .card__face--back {
+    transform: rotateY(180deg);
+  }
+
+  /* --- front ------------------------------------------------------------ */
+  .card__art {
+    position: absolute;
+    inset: 4.5% 4.5% 26% 4.5%;
+    border: 1px solid var(--variant-deep);
+    border-radius: 0.15rem;
+    overflow: hidden;
+    background-color: var(--color-ink);
+  }
+
+  .card__art img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .card__art-empty {
+    width: 100%;
+    height: 100%;
+    display: grid;
+    place-items: center;
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: color-mix(in srgb, var(--color-stock) 55%, transparent);
+    background-image: repeating-linear-gradient(
+      118deg,
+      rgb(255 255 255 / 0.06) 0 1px,
+      transparent 1px 7px
+    );
+  }
+
+  /* Nameplate sits over the photo, so it needs its own ground to stay legible
+     against an arbitrary upload. The scrim is what keeps contrast passing. */
+  .card__plate {
+    position: absolute;
+    inset: auto 4.5% 26% 4.5%;
+    padding: 0.5em 0.6em 0.45em;
+    background-image: linear-gradient(
+      to top,
+      rgb(20 33 61 / 0.92) 0%,
+      rgb(20 33 61 / 0.78) 60%,
+      rgb(20 33 61 / 0) 100%
+    );
+    color: #fff;
+  }
+
+  .card__name {
+    display: block;
+    font-family: var(--font-display);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.05;
+    font-size: clamp(0.75rem, 1.5cqw + 0.55rem, 1.15rem);
+    text-wrap: balance;
+  }
+
+  .card__affil {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 0.55rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgb(255 255 255 / 0.82);
+    margin-top: 0.2em;
+  }
+
+  /* Flavour strip below the art window: the fun fact, in italic, like a real card. */
+  .card__strip {
+    position: absolute;
+    inset: 74% 4.5% 4.5% 4.5%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 0.5em 0.55em;
+    border: 1px solid var(--variant-deep);
+    border-radius: 0.15rem;
+    background-color: color-mix(in srgb, var(--color-stock) 88%, var(--variant));
+  }
+
+  .card__flavour {
+    font-family: var(--font-body);
+    font-style: italic;
+    font-size: 0.6rem;
+    line-height: 1.25;
+    color: var(--color-ink);
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+  }
+
+  .card__footer {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    font-family: var(--font-mono);
+    font-size: 0.5rem;
+    letter-spacing: 0.1em;
+    color: var(--variant-deep);
+  }
+
+  .card__serial {
+    font-weight: 700;
+    color: var(--color-stamp);
+  }
+
+  /* Foil sheen. Angle is driven by the pointer, so it behaves like a real
+     diffraction grating rather than a looping animation. */
+  .card__foil {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    mix-blend-mode: color-dodge;
+    opacity: 0;
+    transition: opacity 0.35s ease;
+    background-image: linear-gradient(
+      var(--foil-angle, 115deg),
+      transparent 22%,
+      rgb(255 255 255 / 0.5) 38%,
+      rgb(255 214 140 / 0.32) 46%,
+      rgb(140 220 255 / 0.38) 54%,
+      rgb(255 255 255 / 0.22) 62%,
+      transparent 78%
+    );
+  }
+
+  .card-shell:hover .card__foil,
+  .card-shell:focus-within .card__foil {
+    opacity: 1;
+  }
+
+  /* Rarity is a seam for later; holo cards get a permanent grating. */
+  .card__face[data-rarity="holo"] .card__foil,
+  .card__face[data-rarity="rare"] .card__foil {
+    opacity: 0.55;
+  }
+
+  /* --- back ------------------------------------------------------------- */
+  .card__back {
+    position: absolute;
+    inset: 4.5%;
+    border: 1px solid var(--variant-deep);
+    border-radius: 0.2rem;
+    background-color: var(--color-stock);
+    padding: 0.7em 0.75em;
+    display: flex;
+    flex-direction: column;
+    gap: 0.45em;
+    overflow: hidden;
+    container-type: inline-size;
+  }
+
+  .card__back-head {
+    display: flex;
+    align-items: center;
+    gap: 0.45em;
+    padding-bottom: 0.45em;
+    border-bottom: 1px solid var(--color-stock-deep);
+  }
+
+  .card__avatar {
+    width: 2.1em;
+    height: 2.1em;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid var(--variant-deep);
+    background-color: var(--color-sleeve);
+    flex-shrink: 0;
+    font-family: var(--font-display);
+    font-size: 0.62rem;
+    display: grid;
+    place-items: center;
+    color: var(--color-ink);
+  }
+
+  .card__qa {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1em;
+  }
+
+  .card__q {
+    font-family: var(--font-mono);
+    font-size: 0.48rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-ink-soft);
+  }
+
+  .card__a {
+    font-size: 0.62rem;
+    line-height: 1.3;
+  }
+
+  /* Fills the lower half of the back with the set mark, struck through with the
+     same diagonal ruling as the foil so both faces feel printed by one press. */
+  .card__mark {
+    flex: 1;
+    display: grid;
+    place-items: center;
+    min-height: 0;
+    overflow: hidden;
+    background-image: repeating-linear-gradient(
+      118deg,
+      color-mix(in srgb, var(--variant) 22%, transparent) 0 1px,
+      transparent 1px 6px
+    );
+    border-radius: 0.15rem;
+  }
+
+  .card__mark span {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 0.7rem;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: color-mix(in srgb, var(--variant-deep) 55%, transparent);
+    transform: rotate(-6deg);
+    text-align: center;
+  }
+
+  .card__back-foot {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5em;
+    padding-top: 0.4em;
+    border-top: 1px solid var(--color-stock-deep);
+    font-family: var(--font-mono);
+    font-size: 0.5rem;
+    letter-spacing: 0.08em;
+  }
+
+  /* -----------------------------------------------------------------------
+     Hero: three cards fanned like a hand held out to you. Overlapping and
+     counter-rotated so the stack reads as physical objects, not a grid.
+  ----------------------------------------------------------------------- */
+  .hero-fan {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding-block: 1.5rem;
+  }
+
+  .hero-fan__item {
+    width: min(13.5rem, 30vw);
+    flex-shrink: 0;
+    transition: transform 0.3s ease;
+  }
+
+  /* Splayed far enough that all three names stay readable — the outer cards are
+     rotated from a low pivot so they swing out rather than tucking behind. */
+  .hero-fan__item[data-index="0"] {
+    transform-origin: bottom right;
+    transform: rotate(-9deg) translateY(0.75rem);
+    margin-right: -1rem;
+    z-index: 1;
+  }
+
+  .hero-fan__item[data-index="1"] {
+    z-index: 3;
+  }
+
+  .hero-fan__item[data-index="2"] {
+    transform-origin: bottom left;
+    transform: rotate(9deg) translateY(0.75rem);
+    margin-left: -1rem;
+    z-index: 2;
+  }
+
+  .hero-fan__item:hover {
+    transform: translateY(-0.5rem);
+    z-index: 4;
+  }
+
+  /* -----------------------------------------------------------------------
+     THE OPENING SURFACE
+
+     The one dark moment in the product. Scoped to the pack-opening route so the
+     reveal reads as an event rather than as the app's default chrome.
+  ----------------------------------------------------------------------- */
+  .stage {
+    background-color: var(--color-ink);
+    color: var(--color-stock);
+    background-image: radial-gradient(
+      ellipse 60% 50% at 50% 38%,
+      rgb(46 196 214 / 0.18) 0%,
+      transparent 70%
+    );
+  }
+
+  /* The card's own strip and back are printed stock, so they stay light even on
+     the dark stage. */
+  .stage .card__flavour,
+  .stage .card__a {
+    color: var(--color-ink);
+  }
+
+  /* The default button is ink-on-stock, which is invisible against the stage's ink
+     ground. Invert both variants here or every control on this page disappears. */
+  .stage .btn {
+    background-color: var(--color-stock);
+    border-color: var(--color-stock);
+    color: var(--color-ink);
+  }
+
+  .stage .btn:hover {
+    background-color: #fff;
+  }
+
+  .stage .btn--quiet {
+    background-color: transparent;
+    border-color: rgb(245 240 230 / 0.55);
+    color: var(--color-stock);
+  }
+
+  .stage .btn--quiet:hover {
+    background-color: rgb(245 240 230 / 0.14);
+  }
+
+  .stage .btn--accent {
+    background-color: var(--color-sun);
+    border-color: var(--color-sun);
+    color: #2b1a02;
+  }
+
+  .stage :focus-visible {
+    outline-color: var(--color-pool);
+  }
+
+  .reveal {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .reveal__card {
+    width: min(20rem, 74vw);
+    margin-block: 1.75rem 1rem;
+    animation: card-arrive 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+    /* The glow reads as the card catching the light as it comes out. */
+    filter: drop-shadow(0 0 2.5rem rgb(46 196 214 / 0.45));
+  }
+
+  @keyframes card-arrive {
+    from {
+      opacity: 0;
+      transform: translateY(2rem) scale(0.86);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  /* -----------------------------------------------------------------------
+     The sealed foil pack.
+  ----------------------------------------------------------------------- */
+  .foilpack {
+    position: relative;
+    width: min(15rem, 60vw);
+    aspect-ratio: 5 / 7;
+    margin-block: 2.25rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    overflow: hidden;
+    cursor: pointer;
+    border: none;
+    border-radius: 0.4rem;
+    color: #fff;
+    background-color: var(--pack-accent, var(--color-sun));
+    background-image:
+      repeating-linear-gradient(
+        102deg,
+        rgb(255 255 255 / 0.16) 0 2px,
+        transparent 2px 7px
+      ),
+      linear-gradient(
+        168deg,
+        color-mix(in srgb, var(--pack-accent, #f5a524) 70%, #000) 0%,
+        var(--pack-accent, #f5a524) 45%,
+        color-mix(in srgb, var(--pack-accent, #f5a524) 60%, #fff) 100%
+      );
+    box-shadow:
+      0 0 0 1px rgb(0 0 0 / 0.35),
+      0 18px 40px -12px rgb(0 0 0 / 0.7);
+    transition: transform 0.2s ease;
+  }
+
+  .foilpack:hover:not(:disabled) {
+    transform: translateY(-3px) scale(1.02);
+  }
+
+  /* The crimped top seam. */
+  .foilpack::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 12%;
+    background-image: repeating-linear-gradient(
+      90deg,
+      rgb(0 0 0 / 0.28) 0 3px,
+      transparent 3px 6px
+    );
+    border-bottom: 1px dashed rgb(0 0 0 / 0.4);
+  }
+
+  .foilpack__sheen {
+    position: absolute;
+    inset: -30% -60%;
+    background-image: linear-gradient(
+      100deg,
+      transparent 40%,
+      rgb(255 255 255 / 0.55) 50%,
+      transparent 60%
+    );
+    animation: sheen 3.4s ease-in-out infinite;
+  }
+
+  @keyframes sheen {
+    0%,
+    100% {
+      transform: translateX(-38%);
+    }
+    50% {
+      transform: translateX(38%);
+    }
+  }
+
+  .foilpack__wordmark {
+    position: relative;
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 1.5rem;
+    letter-spacing: -0.03em;
+    text-transform: uppercase;
+    text-shadow: 0 1px 0 rgb(0 0 0 / 0.35);
+  }
+
+  .foilpack__hint {
+    position: relative;
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    padding: 0.35em 0.7em;
+    border: 1px solid rgb(255 255 255 / 0.6);
+    border-radius: 999px;
+  }
+
+  .foilpack[data-tearing="true"] {
+    animation: tear 0.9s ease-in both;
+  }
+
+  @keyframes tear {
+    0% {
+      transform: none;
+    }
+    18% {
+      transform: rotate(-1.5deg) scale(1.03);
+    }
+    36% {
+      transform: rotate(1.5deg) scale(1.03);
+    }
+    54% {
+      transform: rotate(-1deg) scale(1.05);
+    }
+    100% {
+      transform: scale(1.15);
+      opacity: 0;
+      clip-path: polygon(0 0, 100% 0, 100% 14%, 0 22%);
+    }
+  }
+
+  /* -----------------------------------------------------------------------
+     Controls
+  ----------------------------------------------------------------------- */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5em;
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 0.9rem;
+    letter-spacing: -0.01em;
+    padding: 0.7em 1.2em;
+    border-radius: 0.3rem;
+    border: 1px solid var(--color-ink);
+    background-color: var(--color-ink);
+    color: var(--color-stock);
+    cursor: pointer;
+    transition:
+      transform 0.12s ease,
+      background-color 0.2s ease;
+  }
+
+  .btn:hover {
+    background-color: #1d2f56;
+  }
+
+  .btn:active {
+    transform: translateY(1px);
+  }
+
+  .btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  .btn--accent {
+    background-color: var(--color-sun);
+    border-color: var(--variant-amber-deep);
+    color: #2b1a02;
+  }
+
+  .btn--accent:hover {
+    background-color: #ffb63f;
+  }
+
+  .btn--quiet {
+    background-color: transparent;
+    color: var(--color-ink);
+  }
+
+  .btn--quiet:hover {
+    background-color: var(--color-stock-deep);
+  }
+
+  .chip {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 0.45em 0.8em;
+    border: 1px solid var(--color-sleeve-edge);
+    border-radius: 999px;
+    background-color: transparent;
+    color: var(--color-ink-soft);
+    cursor: pointer;
+  }
+
+  .chip[aria-current="true"] {
+    background-color: var(--color-ink);
+    border-color: var(--color-ink);
+    color: var(--color-stock);
+  }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .field > label,
+  .field > .field__label {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-ink-soft);
+  }
+
+  .field input,
+  .field select,
+  .field textarea {
+    font-family: var(--font-body);
+    font-size: 0.95rem;
+    padding: 0.6em 0.7em;
+    border: 1px solid var(--color-sleeve-edge);
+    border-radius: 0.25rem;
+    background-color: #fff;
+    color: var(--color-ink);
+    width: 100%;
+  }
+
+  .field__hint {
+    font-size: 0.8rem;
+    color: var(--color-ink-soft);
+  }
+
+  /* Border swatches. The selected state is a ring plus a checkmark-free inset,
+     never colour alone — the choices are themselves colours, so colour cannot be
+     the thing distinguishing "chosen". */
+  .swatch {
+    display: block;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 0.25rem;
+    border: 1px solid var(--color-ink);
+    box-shadow: inset 0 0 0 3px var(--color-stock);
+  }
+
+  .swatch[data-selected="true"] {
+    box-shadow:
+      inset 0 0 0 3px var(--color-stock),
+      0 0 0 3px var(--color-ink);
+  }
+
+  /* The radio itself is sr-only, so focus has to surface on the swatch. */
+  input:focus-visible + .swatch {
+    outline: 3px solid var(--color-pool-deep);
+    outline-offset: 3px;
+  }
+
+  .field__error {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: var(--color-stamp);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Reduced motion: drop the tilt, the foil sweep, and the reveal choreography.
+   The flip still happens, just instantly — it carries information, so it stays.
+--------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .card {
+    transition: none;
+    transform: rotateY(var(--flip, 0deg));
+  }
+
+  .card__foil {
+    display: none;
+  }
+
+  .pocket--fresh .card-shell {
+    animation: none;
+  }
+
+  .btn,
+  .card-shell,
+  .hero-fan__item,
+  .foilpack {
+    transition: none;
+  }
+
+  /* The pack still opens and the card still arrives — they just don't perform. */
+  .foilpack__sheen {
+    animation: none;
+    opacity: 0.25;
+  }
+
+  .foilpack[data-tearing="true"] {
+    animation: none;
+    opacity: 0.4;
+  }
+
+  .reveal__card {
+    animation: none;
+  }
+}
