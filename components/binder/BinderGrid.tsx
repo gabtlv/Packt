@@ -27,6 +27,11 @@ type Props = {
  *
  * Page turns happen on the left/right edges of the binder itself — grab a side
  * like you would a real sleeve page — instead of a pager parked below.
+ *
+ * On a phone the same nine pockets are laid out two across (see the binder
+ * rules in globals.css), so four fill the screen and the sheet scrolls. That is
+ * a CSS decision, not a second layout: the markup below is one sheet either
+ * way.
  */
 export function BinderGrid({
   cards,

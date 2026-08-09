@@ -28,6 +28,7 @@ export default async function HomeRoute({ searchParams }: PageProps<"/">) {
           cards={preview.cards}
           avatars={preview.avatars}
           error={error}
+          blurb={false}
         />
       ) : (
         <main className="mx-auto w-full max-w-6xl flex-1 px-5 py-14">
@@ -37,7 +38,7 @@ export default async function HomeRoute({ searchParams }: PageProps<"/">) {
             </p>
           ) : null}
           <p className="text-ink-soft">
-            No default set yet. Run the seed to create SummerHacks.
+            No default set yet. Run the seed to create Packt.
           </p>
         </main>
       )}

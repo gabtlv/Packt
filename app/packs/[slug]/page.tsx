@@ -63,8 +63,10 @@ export default async function BinderRoute({
     <>
       <SiteHeader next={`/packs/${slug}`} />
 
-      <main className="mx-auto w-full max-w-6xl flex-1 px-5 py-8">
-        <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+      {/* The phone gutter is 0.75rem, which the binder cancels with a matching
+          negative margin to go full bleed — keep the two in step. */}
+      <main className="mx-auto w-full max-w-6xl flex-1 px-3 py-6 sm:px-5 sm:py-8">
+        <div className="mb-5 flex flex-wrap items-end justify-between gap-4 sm:mb-6">
           <div>
             <p className="label text-ink-soft">Set</p>
             <h1 className="display text-4xl sm:text-5xl">

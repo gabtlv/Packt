@@ -50,7 +50,8 @@ export function CardFront({
             alt={`${card.display_name}'s card photo`}
             width={size === "full" ? 1200 : 400}
             height={size === "full" ? 1680 : 560}
-            sizes={size === "full" ? "420px" : "(max-width: 640px) 33vw, 220px"}
+            // Phones show the sheet two-up, so a pocket card is ~46vw there.
+            sizes={size === "full" ? "420px" : "(max-width: 640px) 46vw, 220px"}
             priority={priority}
           />
         ) : (

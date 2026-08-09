@@ -49,7 +49,22 @@ export function CollectorFilter({
           <span className="binder-tabs__label">Yours</span>
           <span className="binder-tabs__count">{counts.mine}</span>
         </Link>
-      ) : null}
+      ) : (
+        /* The tab stays on the cover when signed out rather than vanishing: the
+           binder has two lenses whether or not you can open the second one, and
+           a tab that appears only after sign-in makes the feature invisible to
+           the people who most need telling it exists. */
+        <span
+          role="tab"
+          aria-selected="false"
+          aria-disabled="true"
+          className="binder-tabs__tab binder-tabs__tab--locked"
+          tabIndex={-1}
+        >
+          <span className="binder-tabs__label">Yours</span>
+          <span className="binder-tabs__count">Sign in</span>
+        </span>
+      )}
 
       {isOther ? (
         <span

@@ -1,4 +1,4 @@
--- Seeds the SummerHacks pack with staff cards.
+-- Seeds the Packt pack with staff cards.
 --
 -- Why this matters: the PRD's highest-likelihood risk is "small pool size early on
 -- limits pack-opening variety". More urgently, without seeds the very first pack
@@ -9,17 +9,20 @@
 -- as them). Inserting them fires handle_new_user, so their `profiles` rows and
 -- display names/avatars are created by the same code path as real sign-ins.
 --
--- Idempotent: safe to run more than once.
+-- Idempotent: safe to run more than once. The pack's display name is written on
+-- every run, so a rename here reaches a database that has already been seeded —
+-- which also means the name below, not the row, is the source of truth for it.
+-- The slug is the pack's identity and never moves; routes are built from it.
 
 insert into packs (id, slug, name, description, accent)
 values (
   '11111111-1111-1111-1111-111111111111',
   'summerhacks',
-  'SummerHacks',
+  'Packt',
   'The summer cohort. Add your card to the pool, then open a pack and meet someone.',
   '#f59e0b'
 )
-on conflict (slug) do nothing;
+on conflict (slug) do update set name = excluded.name;
 
 -- Seed members. raw_user_meta_data is what handle_new_user reads for the display
 -- name and avatar, so it is populated exactly as Google would.

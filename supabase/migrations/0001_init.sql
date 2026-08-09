@@ -1,6 +1,6 @@
 -- Card Binder core schema.
 --
--- Shape of the domain: a `pack` is a themed community pool (e.g. SummerHacks).
+-- Shape of the domain: a `pack` is a themed community pool (e.g. Packt).
 -- A `card` is one member's self-contribution to exactly one pack. Contributing
 -- mints a `pack_grant` (an unopened pack), and consuming a grant produces a
 -- `pull` (a card that member now holds). There is no private binder anywhere in

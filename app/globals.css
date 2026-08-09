@@ -13,13 +13,14 @@
 @theme {
   --color-ink: #14213d; /* binder cover navy — text and furniture */
   --color-ink-soft: #465575;
-  --color-stock: #f5f0e6; /* card stock cream — the page ground */
+  --color-page: #fdf2ea; /* warm blush stationery — the page ground */
+  --color-stock: #f5f0e6; /* card stock cream — printed surfaces */
   --color-stock-deep: #e8e0cf;
   --color-sleeve: #dfe4e8; /* PVC sleeve grey-blue — the pockets */
   --color-sleeve-edge: #c3ccd4;
   --color-pool: #2ec4d6; /* summer pool cyan — interaction */
   --color-pool-deep: #17879a;
-  --color-sun: #f5a524; /* SummerHacks amber — fills and borders only */
+  --color-sun: #f5a524; /* Packt amber — fills and borders only */
   /* Amber is 1.8:1 on stock, so it can never carry text. This is the same hue
      darkened to clear 4.5:1, for anywhere amber needs to be legible as type. */
   --color-sun-ink: #7d4d03;
@@ -49,9 +50,25 @@
 }
 
 body {
-  background-color: var(--color-stock);
+  background-color: var(--color-page);
   color: var(--color-ink);
   font-family: var(--font-body);
+}
+
+/* Every navigation and every hard refresh lands the same way: a short fade in
+   rather than a snap. `both` holds the from-state so nothing flashes at full
+   opacity before the first frame. */
+.fade-in {
+  animation: fade-in 0.2s ease both;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 /* Every focusable thing gets the same unmissable ring. */
@@ -151,6 +168,18 @@ body {
 
   .binder-tabs__tab[aria-selected="true"] .binder-tabs__count {
     color: var(--color-ink);
+  }
+
+  /* The "Yours" tab before you have signed in: present, so the lens is visible
+     as a thing that exists, but plainly not yet yours to open. */
+  .binder-tabs__tab--locked {
+    cursor: default;
+    opacity: 0.72;
+  }
+
+  .binder-tabs__tab--locked:hover {
+    background-color: color-mix(in srgb, var(--color-stock-deep) 70%, white);
+    color: var(--color-ink-soft);
   }
 
   .binder-empty {
@@ -317,19 +346,55 @@ body {
     overflow: hidden;
   }
 
+  /* Phones get four pockets to a screen — two across, two down — because nine
+     across a 390px screen puts a card face at 90px, which is smaller than the
+     type printed on it can survive. Two columns lands it near 150px, and the
+     rest of the sheet is a scroll down.
+
+     Everything else in this block is width being taken from the binder's
+     furniture and given to the cards: the sheet goes full bleed, the page edges
+     and ring holes shrink to the smallest that still read as themselves, and
+     the seams close up. Each of those is a millimetre of fun fact. */
   @media (max-width: 640px) {
+    .binder,
+    .binder-tabs {
+      margin-inline: -0.75rem; /* cancels the route's px-3 gutter */
+    }
+
     .binder {
-      grid-template-columns: 2rem auto 1fr 2rem;
-      gap: 0.35rem;
-      padding-inline: 0.15rem;
+      grid-template-columns: 1.25rem auto 1fr 1.25rem;
+      gap: 0.2rem;
+      padding: 0.4rem 0.1rem 1.5rem;
+      border-inline: none;
+      border-radius: 0;
+    }
+
+    .binder__pockets {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .binder__rings {
+      gap: 0.5rem;
+      padding-block: 0.75rem;
+    }
+
+    .binder__ring {
+      width: 0.55rem;
+      height: 0.55rem;
+    }
+
+    /* No hover on touch to reveal the cue with, so it stays lit. */
+    .binder__turn-cue {
+      opacity: 0.7;
+      font-size: 1rem;
     }
 
     .binder-tabs {
-      padding-inline: 0.35rem;
+      padding-inline: 0.9rem;
     }
 
     .binder-tabs__tab {
-      padding-inline: 0.8rem;
+      padding-inline: 0.75rem;
       font-size: 0.875rem;
     }
   }
@@ -339,6 +404,9 @@ body {
     aspect-ratio: 5 / 7;
     background-color: color-mix(in srgb, var(--color-sleeve) 88%, white);
     padding: 6%;
+    /* So the sleeve's own furniture (the "Yours" badge) scales with the pocket
+       rather than with the root font size. */
+    container-type: inline-size;
     /* The faint sheen of plastic catching the light. */
     background-image: linear-gradient(
       118deg,
@@ -357,7 +425,7 @@ body {
     bottom: 6%;
     z-index: 2;
     font-family: var(--font-mono);
-    font-size: 0.5rem;
+    font-size: clamp(0.42rem, 3.4cqi, 0.5rem);
     letter-spacing: 0.12em;
     text-transform: uppercase;
     padding: 0.2em 0.45em;
@@ -373,6 +441,22 @@ body {
     inset: 6%;
     border: 1px dashed var(--color-sleeve-edge);
     border-radius: 0.25rem;
+  }
+
+  /* The sleeve keeps just enough margin to still read as a pocket. */
+  @media (max-width: 640px) {
+    .pocket {
+      padding: 4%;
+    }
+
+    .pocket__mine {
+      left: 4%;
+      bottom: 4%;
+    }
+
+    .pocket--empty::after {
+      inset: 4%;
+    }
   }
 
   /* A card that has just arrived over Realtime. */
@@ -405,28 +489,33 @@ body {
     width: 100%;
     aspect-ratio: 5 / 7;
     perspective: 1100px;
+    /* Type container. Every size printed on a card is a share of that card's
+       own width — the same card at 140px in a phone pocket, 280px on the
+       desktop sheet and 320px on the reveal, rather than one layout with type
+       that fits at exactly one of them. Nothing inside may size in rem. */
+    container-type: inline-size;
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
   }
 
   /* Redundant control for pointer users, primary control for everyone else. It
-     stays in the accessibility tree and stays focusable at all times; it only
-     becomes visible on hover or focus so a nine-up grid isn't peppered with
-     icons. */
+     stays in the accessibility tree and stays focusable at all times; where
+     there is a pointer to hover with it stays hidden until you do, so a nine-up
+     grid isn't peppered with icons. Touch is handled below. */
   .card__flip {
     position: absolute;
     top: 5%;
     right: 5%;
     z-index: 2;
-    width: 1.75rem;
-    height: 1.75rem;
+    width: clamp(1.15rem, 12cqi, 1.75rem);
+    height: clamp(1.15rem, 12cqi, 1.75rem);
     display: grid;
     place-items: center;
     border: 1px solid var(--variant-deep);
     border-radius: 50%;
     background-color: color-mix(in srgb, var(--color-stock) 90%, transparent);
     color: var(--color-ink);
-    font-size: 0.8rem;
+    font-size: clamp(0.55rem, 5.5cqi, 0.8rem);
     line-height: 1;
     cursor: pointer;
     opacity: 0;
@@ -438,10 +527,25 @@ body {
     opacity: 1;
   }
 
+  /* Touch has no hover to reveal it with, and "there is a back" is not
+     something a phone user should have to discover by tapping. Kept quiet
+     enough not to read as a badge on a nine-up sheet. */
+  @media (hover: none) {
+    .card__flip {
+      opacity: 0.72;
+    }
+  }
+
   .card {
     position: relative;
     width: 100%;
     height: 100%;
+    /* The one size everything printed on the card is measured in ems of. It
+       lives here rather than on .card-shell because cqi on the container itself
+       would resolve against the container's own ancestor, not the card. The
+       floor and ceiling are the only absolute type sizes on a card: below them
+       the print stops being legible, above them it stops looking printed. */
+    font-size: clamp(0.62rem, 4.6cqi, 1rem);
     transform-style: preserve-3d;
     transition: transform 0.55s cubic-bezier(0.3, 0.9, 0.2, 1);
     /* --rx/--ry come from the pointer; --flip is 0 or 180deg. */
@@ -459,6 +563,13 @@ body {
   }
 
   .card__face {
+    /* The two proportions the whole card is built from: the coloured mat around
+       everything printed, and where the art window stops so the flavour strip
+       can start. Both give ground on a small card, where the mat is width the
+       fun fact could be using and the strip needs a bigger share of the height
+       to hold the same sentence. */
+    --frame: 4.5%;
+    --art-bottom: 26%;
     position: absolute;
     inset: 0;
     backface-visibility: hidden;
@@ -477,7 +588,7 @@ body {
   /* --- front ------------------------------------------------------------ */
   .card__art {
     position: absolute;
-    inset: 4.5% 4.5% 26% 4.5%;
+    inset: var(--frame) var(--frame) var(--art-bottom) var(--frame);
     border: 1px solid var(--variant-deep);
     border-radius: 0.15rem;
     overflow: hidden;
@@ -497,7 +608,7 @@ body {
     display: grid;
     place-items: center;
     font-family: var(--font-mono);
-    font-size: 0.6rem;
+    font-size: 0.72em;
     letter-spacing: 0.14em;
     text-transform: uppercase;
     color: color-mix(in srgb, var(--color-stock) 55%, transparent);
@@ -512,7 +623,7 @@ body {
      against an arbitrary upload. The scrim is what keeps contrast passing. */
   .card__plate {
     position: absolute;
-    inset: auto 4.5% 26% 4.5%;
+    inset: auto var(--frame) var(--art-bottom) var(--frame);
     padding: 0.5em 0.6em 0.45em;
     background-image: linear-gradient(
       to top,
@@ -523,34 +634,48 @@ body {
     color: #fff;
   }
 
+  /* Two lines, then it clips: a nameplate that grows takes the bite out of the
+     photo, and an unbreakable long name would otherwise run off the card. */
   .card__name {
-    display: block;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
     font-family: var(--font-display);
     font-weight: 800;
     letter-spacing: -0.02em;
     line-height: 1.05;
-    font-size: clamp(0.75rem, 1.5cqw + 0.55rem, 1.15rem);
+    font-size: 1.55em;
+    overflow-wrap: anywhere;
     text-wrap: balance;
   }
 
   .card__affil {
-    display: block;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
+    overflow: hidden;
     font-family: var(--font-mono);
-    font-size: 0.55rem;
+    font-size: 0.72em;
     letter-spacing: 0.1em;
     text-transform: uppercase;
     color: rgb(255 255 255 / 0.82);
     margin-top: 0.2em;
   }
 
-  /* Flavour strip below the art window: the fun fact, in italic, like a real card. */
+  /* Flavour strip below the art window: the fun fact, in italic, like a real
+     card. It clips its own contents — a fun fact runs to 160 characters, which
+     is more than a small card can print, and unclipped the overflow lands on
+     top of the artwork instead of being cut. */
   .card__strip {
     position: absolute;
-    inset: 74% 4.5% 4.5% 4.5%;
+    inset: calc(100% - var(--art-bottom)) var(--frame) var(--frame);
     display: flex;
     flex-direction: column;
     justify-content: space-between;
+    gap: 0.25em;
     padding: 0.5em 0.55em;
+    overflow: hidden;
     border: 1px solid var(--variant-deep);
     border-radius: 0.15rem;
     background-color: color-mix(in srgb, var(--color-stock) 88%, var(--variant));
@@ -559,26 +684,41 @@ body {
   .card__flavour {
     font-family: var(--font-body);
     font-style: italic;
-    font-size: 0.6rem;
-    line-height: 1.25;
+    font-size: 0.92em;
+    line-height: 1.3;
     color: var(--color-ink);
+    /* Takes what the footer leaves and no more. */
+    flex: 1;
+    min-height: 0;
     overflow: hidden;
     display: -webkit-box;
     -webkit-box-orient: vertical;
-    -webkit-line-clamp: 3;
+    -webkit-line-clamp: 4;
   }
 
   .card__footer {
     display: flex;
     align-items: baseline;
     justify-content: space-between;
+    gap: 0.5em;
+    flex-shrink: 0;
     font-family: var(--font-mono);
-    font-size: 0.5rem;
+    font-size: 0.62em;
     letter-spacing: 0.1em;
     color: var(--variant-deep);
+    white-space: nowrap;
+  }
+
+  /* Set name gives way to the serial when the card is too narrow for both. */
+  .card__footer > span:first-child,
+  .card__back-foot > span:first-child {
+    overflow: hidden;
+    min-width: 0;
+    text-overflow: ellipsis;
   }
 
   .card__serial {
+    flex-shrink: 0;
     font-weight: 700;
     color: var(--color-stamp);
   }
@@ -617,7 +757,7 @@ body {
   /* --- back ------------------------------------------------------------- */
   .card__back {
     position: absolute;
-    inset: 4.5%;
+    inset: var(--frame);
     border: 1px solid var(--variant-deep);
     border-radius: 0.2rem;
     background-color: var(--color-stock);
@@ -626,7 +766,6 @@ body {
     flex-direction: column;
     gap: 0.45em;
     overflow: hidden;
-    container-type: inline-size;
   }
 
   .card__back-head {
@@ -634,41 +773,63 @@ body {
     align-items: center;
     gap: 0.45em;
     padding-bottom: 0.45em;
+    flex-shrink: 0;
     border-bottom: 1px solid var(--color-stock-deep);
+    /* The head owns a fixed slice; the name inside it must wrap, not push. */
+    min-width: 0;
+  }
+
+  .card__back-head > span:last-child {
+    min-width: 0;
   }
 
   .card__avatar {
-    width: 2.1em;
-    height: 2.1em;
+    /* em on width is em of this element's own size, so the box is 1.9x the
+       card's base — it shrinks with the card like everything else. */
+    font-size: 0.75em;
+    width: 2.5em;
+    height: 2.5em;
     border-radius: 50%;
     object-fit: cover;
     border: 1px solid var(--variant-deep);
     background-color: var(--color-sleeve);
     flex-shrink: 0;
     font-family: var(--font-display);
-    font-size: 0.62rem;
     display: grid;
     place-items: center;
     color: var(--color-ink);
   }
 
+  /* Shrinkable and clipping, so when three long answers ask for more room than
+     the back has, they give way together and the footer — the social handle,
+     the one thing on this face you might act on — keeps its place. */
   .card__qa {
     display: flex;
     flex-direction: column;
     gap: 0.1em;
+    min-height: 0;
+    overflow: hidden;
   }
 
   .card__q {
     font-family: var(--font-mono);
-    font-size: 0.48rem;
+    font-size: 0.68em;
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--color-ink-soft);
   }
 
+  /* Answers run to 160 characters, which is more lines than any card back has
+     room for beside two other answers. Four here, three on a small card, and
+     past that the print cuts off rather than shoving the footer off the card. */
   .card__a {
-    font-size: 0.62rem;
+    font-size: 0.92em;
     line-height: 1.3;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 4;
+    overflow: hidden;
+    overflow-wrap: anywhere;
   }
 
   /* Fills the lower half of the back with the set mark, struck through with the
@@ -690,7 +851,7 @@ body {
   .card__mark span {
     font-family: var(--font-display);
     font-weight: 800;
-    font-size: 0.7rem;
+    font-size: 1em;
     letter-spacing: 0.02em;
     text-transform: uppercase;
     color: color-mix(in srgb, var(--variant-deep) 55%, transparent);
@@ -703,53 +864,263 @@ body {
     align-items: baseline;
     justify-content: space-between;
     gap: 0.5em;
+    flex-shrink: 0;
     padding-top: 0.4em;
     border-top: 1px solid var(--color-stock-deep);
     font-family: var(--font-mono);
-    font-size: 0.5rem;
+    font-size: 0.62em;
     letter-spacing: 0.08em;
+    white-space: nowrap;
+    /* Holds the bottom edge once the set mark above it is dropped on a small
+       card and there is no longer a flexible block doing the pushing. */
+    margin-top: auto;
+  }
+
+  /* A pocket card on a phone. Keyed to the card's width rather than the
+     viewport, because the same phone shows a near-full-width card on the
+     contribute preview, and that one wants the desktop proportions.
+
+     At this size the card is re-proportioned around the words rather than the
+     picture, because a fun fact you can't finish reading is worse than a photo
+     an eighth smaller. The mat closes in, the flavour strip takes a bigger
+     share of the height, and every printed thing that is already legible on
+     the other face — the back's copy of the affiliation, the set mark — gives
+     up its room to the two answers and the fun fact. */
+  @container (max-width: 190px) {
+    .card__face {
+      --frame: 3.2%;
+      --art-bottom: 38%;
+    }
+
+    .card__plate {
+      padding: 0.4em 0.45em 0.35em;
+    }
+
+    .card__strip {
+      padding: 0.4em 0.45em;
+      gap: 0.15em;
+    }
+
+    .card__flavour {
+      font-size: 0.88em;
+      line-height: 1.25;
+      -webkit-line-clamp: 5;
+    }
+
+    .card__back {
+      padding: 0.45em 0.5em;
+      gap: 0.3em;
+    }
+
+    /* Both already printed on the front, and the avatar is the same person as
+       the photo you just turned over. */
+    .card__avatar,
+    .card__back-head .card__affil,
+    .card__mark {
+      display: none;
+    }
+
+    .card__a {
+      -webkit-line-clamp: 4;
+    }
   }
 
   /* -----------------------------------------------------------------------
-     Hero: three cards fanned like a hand held out to you. Overlapping and
-     counter-rotated so the stack reads as physical objects, not a grid.
+     THE HERO
+
+     A framed sheet of stationery: hairline rule, generous margins, pressed
+     florals along the bottom edge. The headline holds the left margin on its
+     own; everything you can act on stacks under the cards on the right.
   ----------------------------------------------------------------------- */
-  .hero-fan {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding-block: 1.5rem;
+  .hero-frame {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    width: 100%;
+    max-width: 78rem;
+    margin-inline: auto;
+    border: 1px solid color-mix(in srgb, var(--color-ink) 20%, transparent);
+    border-radius: 0.85rem;
+    background-color: var(--color-page);
+    padding: clamp(1.5rem, 4vw, 3.25rem) clamp(1.25rem, 4vw, 3.5rem);
   }
 
-  .hero-fan__item {
-    width: min(13.5rem, 30vw);
+  .hero-frame__inner {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    gap: clamp(2rem, 5vw, 3.5rem);
+    align-items: center;
+  }
+
+  @media (min-width: 900px) {
+    .hero-frame__inner {
+      grid-template-columns: 1.05fr 0.95fr;
+    }
+  }
+
+  .hero-eyebrow {
+    font-family: var(--font-mono);
+    font-size: clamp(0.8rem, 1.1vw, 0.95rem);
+    letter-spacing: 0.06em;
+    color: var(--color-ink);
+  }
+
+  .hero-eyebrow span {
+    padding-inline: 0.35em;
+    color: var(--color-ink-soft);
+  }
+
+  .hero-title {
+    margin-top: clamp(0.75rem, 2vw, 1.5rem);
+    font-size: clamp(2.6rem, 6.2vw, 4.5rem);
+  }
+
+  /* The stack mark rides at the end of the second line, sitting on the baseline
+     the way a set logo does, and shrinks with the type. */
+  .hero-title__line {
+    display: inline-flex;
+    align-items: flex-end;
+    gap: 0.35em;
+  }
+
+  .hero-title__mark {
+    width: 0.62em;
+    height: auto;
+    flex-shrink: 0;
+    margin-bottom: 0.06em;
+    color: var(--color-ink);
+  }
+
+  .hero-blurb {
+    margin-top: 1.5rem;
+    max-width: 28rem;
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: 1.05rem;
+    line-height: 1.55;
+    color: var(--color-ink-soft);
+  }
+
+  .hero-aside {
+    display: flex;
+    flex-direction: column;
+    gap: 1.75rem;
+  }
+
+  /* Two cards squared up side by side — a pair pulled from the pool, laid flat
+     on the desk. They keep the same lift on hover as everywhere else. */
+  .hero-pair {
+    display: flex;
+    justify-content: center;
+    gap: clamp(0.75rem, 2vw, 1.25rem);
+  }
+
+  .hero-pair__item {
+    width: min(13rem, 38%);
     flex-shrink: 0;
     transition: transform 0.3s ease;
   }
 
-  /* Splayed far enough that all three names stay readable — the outer cards are
-     rotated from a low pivot so they swing out rather than tucking behind. */
-  .hero-fan__item[data-index="0"] {
-    transform-origin: bottom right;
-    transform: rotate(-9deg) translateY(0.75rem);
-    margin-right: -1rem;
-    z-index: 1;
-  }
-
-  .hero-fan__item[data-index="1"] {
-    z-index: 3;
-  }
-
-  .hero-fan__item[data-index="2"] {
-    transform-origin: bottom left;
-    transform: rotate(9deg) translateY(0.75rem);
-    margin-left: -1rem;
-    z-index: 2;
-  }
-
-  .hero-fan__item:hover {
+  .hero-pair__item:hover {
     transform: translateY(-0.5rem);
     z-index: 4;
+  }
+
+  .hero-steps {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: clamp(1rem, 1.4vw, 1.15rem);
+    color: var(--color-ink);
+  }
+
+  .hero-steps__item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+  }
+
+  /* The rule between markers, so the three read as one sequence. */
+  .hero-steps__item + .hero-steps__item::before {
+    content: "";
+    position: absolute;
+    left: 0.31rem;
+    bottom: calc(100% + 0.15rem);
+    height: 0.35rem;
+    width: 1px;
+    background-color: color-mix(in srgb, var(--color-ink) 35%, transparent);
+  }
+
+  .hero-steps__dot {
+    width: 0.65rem;
+    height: 0.65rem;
+    flex-shrink: 0;
+    border-radius: 50%;
+    border: 1.5px solid color-mix(in srgb, var(--color-ink) 45%, transparent);
+  }
+
+  /* The first step is where you are, so it's the only filled marker. */
+  .hero-steps__item:first-child .hero-steps__dot {
+    background-color: var(--color-ink);
+    border-color: var(--color-ink);
+  }
+
+  .hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  /* -----------------------------------------------------------------------
+     Pressed florals. Anchored to the bottom edge of the frame and allowed to
+     run off it, so the drawings feel laid under the page rather than placed.
+  ----------------------------------------------------------------------- */
+  .floral {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    color: color-mix(in srgb, var(--color-ink) 62%, transparent);
+  }
+
+  .floral__art {
+    position: absolute;
+    bottom: 0;
+    height: auto;
+  }
+
+  .floral__art--left {
+    left: -1.5rem;
+    width: clamp(8rem, 17vw, 13.5rem);
+  }
+
+  .floral__art--centre {
+    left: 46%;
+    width: clamp(2.5rem, 4vw, 3.5rem);
+    bottom: -0.5rem;
+  }
+
+  .floral__art--right {
+    right: -1rem;
+    width: clamp(9rem, 19vw, 15rem);
+  }
+
+  /* Below the two-column breakpoint the drawings crowd the buttons. */
+  @media (max-width: 899px) {
+    .floral__art--centre {
+      display: none;
+    }
+
+    .floral {
+      opacity: 0.55;
+    }
   }
 
   /* -----------------------------------------------------------------------
@@ -1297,6 +1668,13 @@ body {
     background-color: #1d2f56;
   }
 
+  /* Sized in ems so it tracks the label rather than a fixed pixel box. */
+  .btn__icon {
+    width: 1.05em;
+    height: 1.05em;
+    flex-shrink: 0;
+  }
+
   .btn:active {
     transform: translateY(1px);
   }
@@ -1428,7 +1806,7 @@ body {
 
   .btn,
   .card-shell,
-  .hero-fan__item,
+  .hero-pair__item,
   .foilpack,
   .shelf-binder,
   .shelf-binder__detail,

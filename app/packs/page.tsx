@@ -22,7 +22,7 @@ export default async function PacksRoute() {
 
         {packs.length === 0 ? (
           <p className="mt-10 text-ink-soft">
-            No binders yet. Run the seed to create the SummerHacks set.
+            No binders yet. Run the seed to create the Packt set.
           </p>
         ) : (
           <div className="mt-12">
