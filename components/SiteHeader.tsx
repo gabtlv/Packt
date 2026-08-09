@@ -16,16 +16,16 @@ export async function SiteHeader({ next = "/packs/summerhacks" }: Props) {
 
   return (
     <header className="border-b border-sleeve-edge">
-      <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-3 px-5 py-3">
-        <Link href="/" className="display text-lg no-underline">
+      <div className="site-header mx-auto w-full max-w-6xl px-5 py-3">
+        <Link href="/" className="site-header__brand display text-lg no-underline">
           Card Binder
         </Link>
 
-        <div className="flex items-center gap-3">
-          <Link href="/packs" className="label no-underline hover:underline">
-            All packs
-          </Link>
+        <Link href="/packs" className="site-header__binders">
+          All Binders
+        </Link>
 
+        <div className="site-header__auth">
           {user ? (
             <form action={signOut}>
               <button type="submit" className="btn btn--quiet">

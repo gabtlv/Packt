@@ -1,8 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { Card } from "@/components/card/Card";
+import { binderHref } from "@/components/binder/binderHref";
 import { useLiveBinder } from "@/components/binder/useLiveBinder";
 import type { CardRow } from "@/lib/database.types";
 import { POCKETS_PER_PAGE } from "@/lib/services/binder";
@@ -13,13 +16,17 @@ type Props = {
   packId: string;
   packName: string;
   heldCardIds?: string[];
+  slug: string;
+  collector: string;
+  page: number;
+  pageCount: number;
 };
 
 /**
  * A binder page: nine sleeve pockets, with the empty ones left visible.
  *
- * The empty pockets are deliberate rather than decorative — a half-full page is
- * what makes "this gets better as more people join" legible without saying it.
+ * Page turns happen on the left/right edges of the binder itself — grab a side
+ * like you would a real sleeve page — instead of a pager parked below.
  */
 export function BinderGrid({
   cards,
@@ -27,15 +34,47 @@ export function BinderGrid({
   packId,
   packName,
   heldCardIds,
+  slug,
+  collector,
+  page,
+  pageCount,
 }: Props) {
   const held = new Set(heldCardIds ?? []);
   const freshIds = useFreshCards(cards);
+  const turn = usePageTurn(page);
   useLiveBinder(packId);
+  useKeyboardPaging(slug, collector, page, pageCount);
 
   const pockets = Array.from({ length: POCKETS_PER_PAGE }, (_, i) => cards[i]);
+  const canPrev = page > 1;
+  const canNext = page < pageCount;
 
   return (
-    <div className="binder">
+    <div
+      key={page}
+      className={[
+        "binder",
+        turn === "forward" ? "binder--turn-forward" : "",
+        turn === "back" ? "binder--turn-back" : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
+    >
+      {canPrev ? (
+        <Link
+          href={binderHref(slug, collector, page - 1)}
+          className="binder__turn binder__turn--prev"
+          aria-label={`Previous page, ${page - 1} of ${pageCount}`}
+          prefetch
+        >
+          <span className="binder__turn-cue" aria-hidden="true">
+            ‹
+          </span>
+        </Link>
+      ) : (
+        <span className="binder__turn binder__turn--prev" aria-hidden="true" />
+      )}
+
       <div className="binder__rings" aria-hidden="true">
         {Array.from({ length: 6 }, (_, i) => (
           <span key={i} className="binder__ring" />
@@ -72,8 +111,87 @@ export function BinderGrid({
           </li>
         ))}
       </ul>
+
+      {canNext ? (
+        <Link
+          href={binderHref(slug, collector, page + 1)}
+          className="binder__turn binder__turn--next"
+          aria-label={`Next page, ${page + 1} of ${pageCount}`}
+          prefetch
+        >
+          <span className="binder__turn-cue" aria-hidden="true">
+            ›
+          </span>
+        </Link>
+      ) : (
+        <span className="binder__turn binder__turn--next" aria-hidden="true" />
+      )}
+
+      {pageCount > 1 ? (
+        <p className="binder__folio label" aria-live="polite">
+          Page {page} / {pageCount}
+        </p>
+      ) : null}
     </div>
   );
+}
+
+/**
+ * Direction of the latest page change, computed during render so the mount of
+ * the new sheet can play the matching turn animation immediately.
+ */
+function usePageTurn(page: number): "forward" | "back" | null {
+  const previous = useRef(page);
+  const turn =
+    page === previous.current
+      ? null
+      : page > previous.current
+        ? "forward"
+        : "back";
+
+  useEffect(() => {
+    previous.current = page;
+  }, [page]);
+
+  return turn;
+}
+
+/** Arrow keys flip pages when focus isn't in a form field. */
+function useKeyboardPaging(
+  slug: string,
+  collector: string,
+  page: number,
+  pageCount: number,
+) {
+  const router = useRouter();
+
+  useEffect(() => {
+    if (pageCount <= 1) return;
+
+    function onKey(event: KeyboardEvent) {
+      const target = event.target as HTMLElement | null;
+      if (
+        target &&
+        (target.isContentEditable ||
+          target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.tagName === "SELECT")
+      ) {
+        return;
+      }
+
+      if (event.key === "ArrowRight" && page < pageCount) {
+        event.preventDefault();
+        router.push(binderHref(slug, collector, page + 1));
+      } else if (event.key === "ArrowLeft" && page > 1) {
+        event.preventDefault();
+        router.push(binderHref(slug, collector, page - 1));
+      }
+    }
+
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [slug, collector, page, pageCount, router]);
 }
 
 /**

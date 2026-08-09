@@ -2,7 +2,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { BinderGrid } from "@/components/binder/BinderGrid";
-import { BinderPager } from "@/components/binder/BinderPager";
 import { CollectorFilter } from "@/components/binder/CollectorFilter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { createClient } from "@/lib/supabase/server";
@@ -68,7 +67,14 @@ export default async function BinderRoute({
         <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="label text-ink-soft">Set</p>
-            <h1 className="display text-4xl sm:text-5xl">{pack.name}</h1>
+            <h1 className="display text-4xl sm:text-5xl">
+              <Link
+                href={`/packs/${slug}/about`}
+                className="text-inherit no-underline decoration-sun decoration-2 underline-offset-4 hover:underline"
+              >
+                {pack.name}
+              </Link>
+            </h1>
             {pack.description ? (
               <p className="mt-2 max-w-xl text-ink-soft">{pack.description}</p>
             ) : null}
@@ -83,7 +89,7 @@ export default async function BinderRoute({
           />
         </div>
 
-        <div className="mb-4">
+        <section className="binder-deck">
           <CollectorFilter
             slug={slug}
             collector={filterValue}
@@ -91,37 +97,38 @@ export default async function BinderRoute({
             counts={{ all: pack.card_count, mine: mineView?.total ?? 0 }}
             viewingName={otherName}
           />
-        </div>
 
-        {view.total === 0 ? (
-          <EmptyBinder signedIn={Boolean(user)} filter={filterValue} slug={slug} />
-        ) : (
-          <>
-            <BinderGrid
-              cards={view.cards}
-              avatars={view.avatars}
-              packId={pack.id}
-              packName={pack.name}
-              heldCardIds={held ? [...held] : []}
+          {view.total === 0 ? (
+            <EmptyBinder
+              signedIn={Boolean(user)}
+              filter={filterValue}
+              slug={slug}
             />
-
-            <p className="label mt-4 text-center text-ink-soft">
-              {view.total} card{view.total === 1 ? "" : "s"} ·{" "}
-              {view.pageCount * POCKETS_PER_PAGE - view.total} pocket
-              {view.pageCount * POCKETS_PER_PAGE - view.total === 1 ? "" : "s"} still
-              empty
-            </p>
-
-            <div className="mt-6">
-              <BinderPager
+          ) : (
+            <>
+              <BinderGrid
+                cards={view.cards}
+                avatars={view.avatars}
+                packId={pack.id}
+                packName={pack.name}
+                heldCardIds={held ? [...held] : []}
                 slug={slug}
                 collector={filterValue}
                 page={view.page}
                 pageCount={view.pageCount}
               />
-            </div>
-          </>
-        )}
+
+              <p className="label mt-4 text-center text-ink-soft">
+                {view.total} card{view.total === 1 ? "" : "s"} ·{" "}
+                {view.pageCount * POCKETS_PER_PAGE - view.total} pocket
+                {view.pageCount * POCKETS_PER_PAGE - view.total === 1
+                  ? ""
+                  : "s"}{" "}
+                still empty
+              </p>
+            </>
+          )}
+        </section>
       </main>
     </>
   );
@@ -191,7 +198,7 @@ function EmptyBinder({
   const isMine = filter === "me";
 
   return (
-    <div className="rounded-lg border border-dashed border-sleeve-edge p-10 text-center">
+    <div className="binder-empty">
       <h2 className="display text-2xl">
         {isMine ? "You don't hold any cards yet" : "This set is empty"}
       </h2>

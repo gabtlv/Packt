@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { binderHref } from "@/components/binder/binderHref";
+
 type Props = {
   slug: string;
   /** Current filter: "all", "me", or another member's id. */
@@ -10,12 +12,9 @@ type Props = {
 };
 
 /**
- * The "My Cards" lens.
- *
- * Deliberately a filter on this same page rather than a route of its own: nothing a
- * member holds lives anywhere private, so there is no separate binder to navigate
- * to. The same control also shows another member's lens when you arrive via their
- * card, which is why it can render a third chip.
+ * Binder lenses as real tabs sitting on the binder cover — Everyone / Yours
+ * (and a third tab when viewing another member). Same route, different filter;
+ * nothing private lives elsewhere.
  */
 export function CollectorFilter({
   slug,
@@ -27,30 +26,43 @@ export function CollectorFilter({
   const isOther = collector !== "all" && collector !== "me";
 
   return (
-    <nav className="flex flex-wrap items-center gap-2" aria-label="Filter binder">
+    <div className="binder-tabs" role="tablist" aria-label="Binder views">
       <Link
-        href={`/packs/${slug}`}
-        className="chip"
-        aria-current={collector === "all"}
+        href={binderHref(slug, "all")}
+        role="tab"
+        className="binder-tabs__tab"
+        aria-selected={collector === "all"}
+        tabIndex={collector === "all" ? 0 : -1}
       >
-        Everyone · {counts.all}
+        <span className="binder-tabs__label">Everyone</span>
+        <span className="binder-tabs__count">{counts.all}</span>
       </Link>
 
       {signedIn ? (
         <Link
-          href={`/packs/${slug}?collector=me`}
-          className="chip"
-          aria-current={collector === "me"}
+          href={binderHref(slug, "me")}
+          role="tab"
+          className="binder-tabs__tab"
+          aria-selected={collector === "me"}
+          tabIndex={collector === "me" ? 0 : -1}
         >
-          Yours · {counts.mine}
+          <span className="binder-tabs__label">Yours</span>
+          <span className="binder-tabs__count">{counts.mine}</span>
         </Link>
       ) : null}
 
       {isOther ? (
-        <span className="chip" aria-current="true">
-          {viewingName ?? "Member"}&apos;s cards
+        <span
+          role="tab"
+          className="binder-tabs__tab"
+          aria-selected="true"
+          tabIndex={0}
+        >
+          <span className="binder-tabs__label">
+            {viewingName ?? "Member"}
+          </span>
         </span>
       ) : null}
-    </nav>
+    </div>
   );
 }
