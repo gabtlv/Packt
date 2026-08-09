@@ -25,7 +25,7 @@ export default async function PacksRoute() {
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="label text-ink-soft">Browse</p>
-            <h1 className="display mt-2 text-4xl sm:text-5xl">The bookshelf</h1>
+            <h1 className="display mt-2 text-4xl sm:text-5xl">The Bookshelf</h1>
             <p className="mt-3 max-w-lg text-ink-soft">
               Hover a binder to pull it forward. Click to take it off the shelf
               and open it.
