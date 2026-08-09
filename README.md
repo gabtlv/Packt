@@ -80,7 +80,7 @@ regardless of what the frontend does.
 | Rule | Where it lives |
 | --- | --- |
 | Contributing earns exactly one pack | `grant_pack_on_contribution` trigger, same transaction as the insert |
-| One card per person per pack | `unique (pack_id, owner_id)` — also blocks farming extra packs |
+| At most five cards per person per pack | `enforce_cards_per_pack_limit` trigger — each card still mints one pack |
 | One pack consumed per opening | `UPDATE … FOR UPDATE SKIP LOCKED` in `open_pack` |
 | Never your own card, never a duplicate | excluded in `open_pack`'s `WHERE`, so it's unrepresentable rather than retried |
 | Duplicate backstop | `unique (user_id, card_id)` on `pulls` |

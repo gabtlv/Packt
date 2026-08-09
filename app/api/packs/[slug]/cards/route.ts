@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { contributeSchema } from "@/lib/schemas";
-import { AlreadyContributedError, contributeCard } from "@/lib/services/cards";
+import { ContributionLimitError, contributeCard } from "@/lib/services/cards";
 import { getPackBySlug } from "@/lib/services/packs";
 import { ensureMyProfile } from "@/lib/services/profiles";
 import { createClient } from "@/lib/supabase/server";
@@ -41,20 +41,18 @@ export async function POST(
   try {
     // cards.owner_id → profiles. Users who signed in before the signup trigger
     // was applied have no row yet; create it from auth metadata.
-    const profile = await ensureMyProfile(supabase);
+    await ensureMyProfile(supabase);
 
     const card = await contributeCard(supabase, {
       packId: pack.id,
       userId: user.id,
-      displayName:
-        profile.display_name || user.email?.split("@")[0] || "Anonymous",
       input: parsed.data,
     });
 
     return NextResponse.json({ card }, { status: 201 });
   } catch (error) {
-    if (error instanceof AlreadyContributedError) {
-      return NextResponse.json({ error: "already_contributed" }, { status: 409 });
+    if (error instanceof ContributionLimitError) {
+      return NextResponse.json({ error: "contribution_limit" }, { status: 409 });
     }
 
     console.error("contribute failed", error);

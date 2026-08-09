@@ -4,6 +4,9 @@ import type { Database, PackRow } from "@/lib/database.types";
 
 export const DEFAULT_PACK_SLUG = "summerhacks";
 
+/** Hard cap enforced by enforce_cards_per_pack_limit() in the database. */
+export const MAX_CARDS_PER_PACK = 5;
+
 export async function getPackBySlug(
   supabase: SupabaseClient<Database>,
   slug: string,
@@ -29,14 +32,16 @@ export async function listPacks(
 }
 
 export type PackStatus = {
-  hasContributed: boolean;
+  contributionCount: number;
   unopenedPacks: number;
+  hasContributed: boolean;
+  canContribute: boolean;
 };
 
 /**
- * Whether the signed-in member has contributed to this pack and how many unopened
- * packs they hold. Drives both the contribute gate and the "Open your pack" call
- * to action, in one round trip.
+ * How many cards the signed-in member has added to this pack, and how many
+ * unopened packs they hold. Drives the contribute gate and the "Open your pack"
+ * call to action, in one round trip.
  */
 export async function getMyPackStatus(
   supabase: SupabaseClient<Database>,
@@ -46,10 +51,20 @@ export async function getMyPackStatus(
     p_pack_id: packId,
   });
 
-  if (error || !data?.[0]) return { hasContributed: false, unopenedPacks: 0 };
+  if (error || !data?.[0]) {
+    return {
+      contributionCount: 0,
+      unopenedPacks: 0,
+      hasContributed: false,
+      canContribute: true,
+    };
+  }
 
+  const contributionCount = data[0].contribution_count;
   return {
-    hasContributed: data[0].has_contributed,
+    contributionCount,
     unopenedPacks: data[0].unopened_packs,
+    hasContributed: contributionCount > 0,
+    canContribute: contributionCount < MAX_CARDS_PER_PACK,
   };
 }

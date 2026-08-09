@@ -67,20 +67,42 @@ begin
   raise notice 'PASS 2  contributing mints exactly one unopened pack';
 
   ------------------------------------------------------------------ 3
-  -- A second contribution to the same pack is rejected (no grant farming).
+  -- Up to five contributions are allowed; a sixth is rejected.
+  for i in 2..5 loop
+    insert into cards (
+      pack_id, owner_id, photo_path, thumb_path, display_name,
+      prompt_1_key, prompt_1_answer, prompt_2_key, prompt_2_answer, fun_fact
+    ) values (
+      v_pack, v_alice,
+      'aaaaaaaa-0000-4000-8000-00000000a11c/aaaaaaaa-0000-4000-8000-00000000000' || i || '/full.webp',
+      'aaaaaaaa-0000-4000-8000-00000000a11c/aaaaaaaa-0000-4000-8000-00000000000' || i || '/thumb.webp',
+      'Alice Again',
+      'building', 'a', 'snack', 'b', 'c'
+    );
+  end loop;
+
+  select count(*) into v_count
+    from pack_grants where user_id = v_alice and pack_id = v_pack and consumed_at is null;
+  if v_count <> 5 then
+    raise exception 'FAIL 3: five contributions should mint 5 grants, got %', v_count;
+  end if;
+
   begin
     insert into cards (
       pack_id, owner_id, photo_path, thumb_path, display_name,
       prompt_1_key, prompt_1_answer, prompt_2_key, prompt_2_answer, fun_fact
     ) values (
-      v_pack, v_alice, 'seed/02.png', 'seed/02.png', 'Alice Again',
+      v_pack, v_alice,
+      'aaaaaaaa-0000-4000-8000-00000000a11c/aaaaaaaa-0000-4000-8000-000000000006/full.webp',
+      'aaaaaaaa-0000-4000-8000-00000000a11c/aaaaaaaa-0000-4000-8000-00000000a11c/thumb.webp',
+      'Alice Too Many',
       'building', 'a', 'snack', 'b', 'c'
     );
-    raise exception 'FAIL 3: a second contribution to the same pack was allowed';
-  exception when unique_violation then
-    null; -- expected
+    raise exception 'FAIL 3: a sixth contribution to the same pack was allowed';
+  exception when sqlstate 'P0004' then
+    null; -- expected: contribution_limit
   end;
-  raise notice 'PASS 3  one card per person per pack';
+  raise notice 'PASS 3  at most five cards per person per pack';
 
   ------------------------------------------------------------------ 4
   -- Alice is the only card in the pool, so there is nothing she may pull.
@@ -94,7 +116,7 @@ begin
 
   select count(*) into v_count
     from pack_grants where user_id = v_alice and pack_id = v_pack and consumed_at is null;
-  if v_count <> 1 then
+  if v_count <> 5 then
     raise exception 'FAIL 4: grant was not refunded after pool_exhausted (% unopened)', v_count;
   end if;
   raise notice 'PASS 4  no self-pull, and an exhausted pool refunds the pack';
@@ -116,11 +138,12 @@ begin
   raise notice 'PASS 5  a pull returns an eligible card';
 
   ------------------------------------------------------------------ 6
-  -- The grant is spent, so a second open fails.
+  -- Grants remain, but Bob is already held and Alice cannot pull herself, so
+  -- further opens report pool_exhausted rather than a duplicate.
   begin
     perform open_pack(v_pack);
-    raise exception 'FAIL 6: opened a second pack on one grant';
-  exception when sqlstate 'P0001' then
+    raise exception 'FAIL 6: opened a pack when no eligible cards remained';
+  exception when sqlstate 'P0002' then
     null; -- expected
   end;
 
@@ -128,7 +151,7 @@ begin
   if v_count <> 1 then
     raise exception 'FAIL 6: expected exactly 1 pull, found %', v_count;
   end if;
-  raise notice 'PASS 6  one grant buys exactly one pull';
+  raise notice 'PASS 6  remaining grants cannot draw a duplicate';
 
   ------------------------------------------------------------------ 7
   -- Given another grant, Bob's card is now ineligible (already held), so the pool
@@ -147,16 +170,16 @@ begin
   ------------------------------------------------------------------ 8
   -- Serials are distinct and sequential within the pack.
   select count(distinct serial) into v_count from cards where pack_id = v_pack;
-  if v_count <> 2 then
-    raise exception 'FAIL 8: expected 2 distinct serials, found %', v_count;
+  if v_count <> 6 then
+    raise exception 'FAIL 8: expected 6 distinct serials, found %', v_count;
   end if;
   raise notice 'PASS 8  serials are unique within a pack';
 
   ------------------------------------------------------------------ 9
-  -- binder_cards: Alice contributed her own and pulled Bob's, so her lens is both.
+  -- binder_cards: Alice contributed five of her own and pulled Bob's.
   select count(*) into v_count from binder_cards(v_pack, v_alice);
-  if v_count <> 2 then
-    raise exception 'FAIL 9: Alice''s lens showed % cards, expected 2', v_count;
+  if v_count <> 6 then
+    raise exception 'FAIL 9: Alice''s lens showed % cards, expected 6', v_count;
   end if;
 
   -- Bob contributed one and has pulled nothing.
@@ -167,8 +190,8 @@ begin
 
   -- Unfiltered shows the whole pack.
   select count(*) into v_count from binder_cards(v_pack, null);
-  if v_count <> 2 then
-    raise exception 'FAIL 9: the unfiltered binder showed %, expected 2', v_count;
+  if v_count <> 6 then
+    raise exception 'FAIL 9: the unfiltered binder showed %, expected 6', v_count;
   end if;
   raise notice 'PASS 9  binder_cards returns contributed + pulled, and nothing else';
 

@@ -127,7 +127,7 @@ export type Database = {
       };
       my_pack_status: {
         Args: { p_pack_id: string };
-        Returns: { has_contributed: boolean; unopened_packs: number }[];
+        Returns: { contribution_count: number; unopened_packs: number }[];
       };
       ensure_my_profile: {
         Args: Record<string, never>;

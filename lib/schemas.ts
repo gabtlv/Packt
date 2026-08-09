@@ -41,6 +41,7 @@ export const contributeSchema = z
     thumb_path: storagePath,
     border_variant: z.enum(BORDER_VARIANTS),
 
+    display_name: z.string().trim().min(1, "required").max(40),
     school_or_work: trimmedOptional(80),
     favorite_media: trimmedOptional(80),
     social_label: trimmedOptional(24),

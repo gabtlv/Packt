@@ -5,7 +5,11 @@ import { ContributeForm } from "@/components/create/ContributeForm";
 import { SiteHeader } from "@/components/SiteHeader";
 import { signInWithGoogle } from "@/lib/auth-actions";
 import { createClient } from "@/lib/supabase/server";
-import { getMyPackStatus, getPackBySlug } from "@/lib/services/packs";
+import {
+  getMyPackStatus,
+  getPackBySlug,
+  MAX_CARDS_PER_PACK,
+} from "@/lib/services/packs";
 
 export default async function ContributeRoute({
   params,
@@ -27,7 +31,7 @@ export default async function ContributeRoute({
         <main className="mx-auto w-full max-w-md flex-1 px-5 py-16 text-center">
           <h1 className="display text-3xl">Sign in to add your card</h1>
           <p className="mt-3 text-ink-soft">
-            We use your Google name and photo for the back of the card.
+            Sign in so we can save your card to this pack.
           </p>
           <form action={signInWithGoogle} className="mt-6">
             <input
@@ -44,10 +48,10 @@ export default async function ContributeRoute({
     );
   }
 
-  // One card per person per pack, enforced by a unique constraint. Redirect rather
-  // than let them fill in a form that can only fail.
+  // Cap is enforced in the database; redirect once they've hit it rather than
+  // letting them fill in a form that can only fail.
   const status = await getMyPackStatus(supabase, pack.id);
-  if (status.hasContributed) {
+  if (!status.canContribute) {
     redirect(
       status.unopenedPacks > 0 ? `/packs/${slug}/open` : `/packs/${slug}?collector=me`,
     );
@@ -70,16 +74,25 @@ export default async function ContributeRoute({
           </Link>{" "}
           · Add your card
         </p>
-        <h1 className="display mt-2 mb-8 text-4xl">Make your card</h1>
+        <h1 className="display mt-2 mb-8 text-4xl">
+          {status.hasContributed ? "Make another card" : "Make your card"}
+        </h1>
+        {status.hasContributed ? (
+          <p className="mb-8 text-ink-soft">
+            {status.contributionCount} of {MAX_CARDS_PER_PACK} cards added to this
+            set. Each one earns you another pack.
+          </p>
+        ) : null}
 
         <ContributeForm
           slug={slug}
           packName={pack.name}
           userId={user.id}
-          displayName={
-            profile?.display_name ?? user.email?.split("@")[0] ?? "Anonymous"
+          suggestedName={
+            profile?.display_name ?? user.email?.split("@")[0] ?? ""
           }
           avatarUrl={profile?.avatar_url ?? null}
+          contributionCount={status.contributionCount}
         />
       </main>
     </>

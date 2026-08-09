@@ -77,6 +77,7 @@ export default async function BinderRoute({
           <PackActions
             slug={slug}
             signedIn={Boolean(user)}
+            canContribute={status?.canContribute ?? true}
             hasContributed={status?.hasContributed ?? false}
             unopenedPacks={status?.unopenedPacks ?? 0}
           />
@@ -129,41 +130,51 @@ export default async function BinderRoute({
 function PackActions({
   slug,
   signedIn,
+  canContribute,
   hasContributed,
   unopenedPacks,
 }: {
   slug: string;
   signedIn: boolean;
+  canContribute: boolean;
   hasContributed: boolean;
   unopenedPacks: number;
 }) {
   if (!signedIn) {
     return (
       <p className="max-w-xs text-sm text-ink-soft">
-        Sign in to add your card. Adding one earns you a pack to open.
+        Sign in to add a card. Each card earns you a pack to open — up to five per
+        set.
       </p>
     );
   }
 
   if (unopenedPacks > 0) {
     return (
-      <Link href={`/packs/${slug}/open`} className="btn btn--accent">
-        Open your pack{unopenedPacks > 1 ? ` (${unopenedPacks})` : ""}
-      </Link>
+      <div className="flex flex-wrap items-center gap-3">
+        <Link href={`/packs/${slug}/open`} className="btn btn--accent">
+          Open your pack{unopenedPacks > 1 ? ` (${unopenedPacks})` : ""}
+        </Link>
+        {canContribute ? (
+          <Link href={`/packs/${slug}/contribute`} className="btn">
+            {hasContributed ? "Add another card" : "Add your card"}
+          </Link>
+        ) : null}
+      </div>
     );
   }
 
-  if (!hasContributed) {
+  if (canContribute) {
     return (
       <Link href={`/packs/${slug}/contribute`} className="btn btn--accent">
-        Add your card
+        {hasContributed ? "Add another card" : "Add your card"}
       </Link>
     );
   }
 
   return (
     <p className="max-w-xs text-sm text-ink-soft">
-      You&apos;re in the pool. You&apos;ll earn another pack when this set grows.
+      You&apos;ve added five cards to this set. Open packs as the pool grows.
     </p>
   );
 }

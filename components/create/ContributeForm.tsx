@@ -9,17 +9,21 @@ import type { BorderVariant, CardRow } from "@/lib/database.types";
 import { PhotoTooLargeError, uploadCardPhoto } from "@/lib/images";
 import { PROMPTS } from "@/lib/prompts";
 import { BORDER_VARIANTS, contributeSchema } from "@/lib/schemas";
+import { MAX_CARDS_PER_PACK } from "@/lib/services/packs";
 import { createClient } from "@/lib/supabase/client";
 
 type Props = {
   slug: string;
   packName: string;
   userId: string;
-  displayName: string;
+  /** Prefill only — the member can change the name shown on their card. */
+  suggestedName: string;
   avatarUrl: string | null;
+  contributionCount: number;
 };
 
 type Fields = {
+  display_name: string;
   border_variant: BorderVariant;
   school_or_work: string;
   favorite_media: string;
@@ -31,18 +35,6 @@ type Fields = {
   fun_fact: string;
 };
 
-const INITIAL: Fields = {
-  border_variant: "amber",
-  school_or_work: "",
-  favorite_media: "",
-  social_url: "",
-  prompt_1_key: PROMPTS[0].key,
-  prompt_1_answer: "",
-  prompt_2_key: PROMPTS[1].key,
-  prompt_2_answer: "",
-  fun_fact: "",
-};
-
 /**
  * One screen, not a wizard. The PRD's target is a card contributed in under sixty
  * seconds, and a live preview beside a single short form gets there faster than
@@ -52,11 +44,23 @@ export function ContributeForm({
   slug,
   packName,
   userId,
-  displayName,
+  suggestedName,
   avatarUrl,
+  contributionCount,
 }: Props) {
   const router = useRouter();
-  const [fields, setFields] = useState<Fields>(INITIAL);
+  const [fields, setFields] = useState<Fields>(() => ({
+    display_name: suggestedName,
+    border_variant: "amber",
+    school_or_work: "",
+    favorite_media: "",
+    social_url: "",
+    prompt_1_key: PROMPTS[0].key,
+    prompt_1_answer: "",
+    prompt_2_key: PROMPTS[1].key,
+    prompt_2_answer: "",
+    fun_fact: "",
+  }));
   const [photo, setPhoto] = useState<{ file: File; url: string } | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -98,7 +102,7 @@ export function ContributeForm({
       thumb_path: "",
       border_variant: fields.border_variant,
       rarity: "common",
-      display_name: displayName,
+      display_name: fields.display_name || "Your name",
       school_or_work: fields.school_or_work || null,
       favorite_media: fields.favorite_media || null,
       social_label: null,
@@ -110,7 +114,7 @@ export function ContributeForm({
       fun_fact: fields.fun_fact || "Your fun fact lands here.",
       created_at: new Date().toISOString(),
     }),
-    [fields, displayName, userId],
+    [fields, userId],
   );
 
   async function onSubmit(event: React.FormEvent) {
@@ -129,6 +133,7 @@ export function ContributeForm({
 
       const parsed = contributeSchema.safeParse({
         ...paths,
+        display_name: fields.display_name,
         border_variant: fields.border_variant,
         school_or_work: fields.school_or_work,
         favorite_media: fields.favorite_media,
@@ -200,6 +205,23 @@ export function ContributeForm({
           />
           <p className="field__hint">
             Resized in your browser before upload, so it stays small.
+          </p>
+        </div>
+
+        <div className="field">
+          <label htmlFor="display_name">Name on card</label>
+          <input
+            id="display_name"
+            value={fields.display_name}
+            maxLength={40}
+            onChange={(e) => set("display_name", e.target.value)}
+            placeholder="Alex Rivera"
+            autoComplete="nickname"
+            required
+          />
+          <p className="field__hint">
+            Shown on the front and back. Edit freely — it doesn&apos;t have to
+            match your Google account.
           </p>
         </div>
 
@@ -306,7 +328,8 @@ export function ContributeForm({
             {submitting ? "Adding your card…" : "Add card and open a pack"}
           </button>
           <p className="field__hint">
-            Your card joins the {packName} pool and earns you one pack.
+            Joins the {packName} pool and earns you one pack (
+            {contributionCount + 1} of {MAX_CARDS_PER_PACK} for this set).
           </p>
         </div>
       </form>
@@ -374,8 +397,8 @@ function PromptField({
 
 function messageFor(code: unknown): string {
   switch (code) {
-    case "already_contributed":
-      return "You've already added a card to this set.";
+    case "contribution_limit":
+      return `You've added the maximum of ${MAX_CARDS_PER_PACK} cards to this set.`;
     case "not_authenticated":
       return "Your session expired. Sign in again and retry.";
     case "invalid_card":

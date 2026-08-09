@@ -3,10 +3,10 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { CardRow, Database } from "@/lib/database.types";
 import type { ContributeInput } from "@/lib/schemas";
 
-export class AlreadyContributedError extends Error {
+export class ContributionLimitError extends Error {
   constructor() {
-    super("You've already added a card to this set.");
-    this.name = "AlreadyContributedError";
+    super("You've added the maximum number of cards to this set.");
+    this.name = "ContributionLimitError";
   }
 }
 
@@ -19,8 +19,9 @@ export class AlreadyContributedError extends Error {
  * in the same transaction, so "contributed but earned nothing" is not a reachable
  * state.
  *
- * `owner_id` and `display_name` come from the session and profile, never from the
- * request body — and the cards_insert_own policy re-checks owner_id independently.
+ * `owner_id` comes from the session — the cards_insert_own policy re-checks it
+ * independently of the request body. The name on the card is whatever the member
+ * typed in the form (`display_name`).
  *
  * This is the seam where a generated-art step would go: it would derive extra
  * columns from `photo_path` before the insert, with no change to routes or schema.
@@ -30,12 +31,10 @@ export async function contributeCard(
   {
     packId,
     userId,
-    displayName,
     input,
   }: {
     packId: string;
     userId: string;
-    displayName: string;
     input: ContributeInput;
   },
 ): Promise<CardRow> {
@@ -44,7 +43,7 @@ export async function contributeCard(
     .insert({
       pack_id: packId,
       owner_id: userId,
-      display_name: displayName,
+      display_name: input.display_name,
       photo_path: input.photo_path,
       thumb_path: input.thumb_path,
       border_variant: input.border_variant,
@@ -62,8 +61,13 @@ export async function contributeCard(
     .single();
 
   if (error) {
-    // unique (pack_id, owner_id) — one contribution per person per pack.
-    if (error.code === "23505") throw new AlreadyContributedError();
+    // Trigger enforce_cards_per_pack_limit — at most five cards per member per pack.
+    if (
+      error.code === "P0004" ||
+      error.message?.includes("contribution_limit")
+    ) {
+      throw new ContributionLimitError();
+    }
     throw error;
   }
 
