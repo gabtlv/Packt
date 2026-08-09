@@ -17,7 +17,7 @@ export async function SiteHeader({ next = "/packs/summerhacks" }: Props) {
   return (
     <header className="border-b border-sleeve-edge">
       <div className="site-header mx-auto w-full max-w-6xl px-5 py-3">
-        <span className="site-header__brand display text-lg">
+        <span className="site-header__brand display text-2xl">
           Packt
         </span>
 
