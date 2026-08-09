@@ -34,6 +34,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
+      // Extensions (LanguageTool, Grammarly) stamp attributes on <html> before hydration.
+      suppressHydrationWarning
       className={`${archivo.variable} ${newsreader.variable} ${spaceMono.variable} h-full`}
     >
       <body className="min-h-full flex flex-col">{children}</body>

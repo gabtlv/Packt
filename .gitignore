@@ -33,7 +33,11 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 # ...but the template has no secrets in it and is how anyone sets the project up.
+<<<<<<< Updated upstream
 .env.local.example
+=======
+.env.local
+>>>>>>> Stashed changes
 
 # vercel
 .vercel
