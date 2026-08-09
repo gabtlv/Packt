@@ -1,4 +1,4 @@
-# Card Binder
+# Packt
 
 Make a trading card about yourself, add it to your community's shared binder, and
 earn one pack to open — pulling a random card of someone else in the pool.
