@@ -11,11 +11,8 @@ export const MAX_CARDS_PER_PACK = 5;
 export class PackCreateError extends Error {
   readonly reason: "not_authenticated" | "not_admin" | "slug_taken" | "invalid";
 
-  constructor(
-    reason: PackCreateError["reason"],
-    message = reason,
-  ) {
-    super(message);
+  constructor(reason: PackCreateError["reason"], message?: string) {
+    super(message ?? reason);
     this.name = "PackCreateError";
     this.reason = reason;
   }
