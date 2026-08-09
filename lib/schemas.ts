@@ -73,3 +73,39 @@ export const contributeSchema = z
   });
 
 export type ContributeInput = z.infer<typeof contributeSchema>;
+
+const slugSchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .min(1, "required")
+  .max(48)
+  .regex(
+    /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
+    "use lowercase letters, numbers, and hyphens",
+  );
+
+/** Admin-only: create a new event binder on the bookshelf. */
+export const createPackSchema = z.object({
+  name: z.string().trim().min(1, "required").max(60),
+  slug: slugSchema,
+  description: trimmedOptional(200),
+  accent: z
+    .string()
+    .trim()
+    .regex(/^#[0-9a-fA-F]{6}$/, "use a hex colour like #f59e0b")
+    .transform((v) => v.toLowerCase())
+    .default("#f59e0b"),
+});
+
+export type CreatePackInput = z.infer<typeof createPackSchema>;
+
+/** Derive a URL slug from a display name (`Summer Hacks` → `summer-hacks`). */
+export function slugifyPackName(name: string): string {
+  return name
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 48);
+}

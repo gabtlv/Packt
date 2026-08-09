@@ -133,6 +133,19 @@ export type Database = {
         Args: Record<string, never>;
         Returns: ProfileRow;
       };
+      is_admin: {
+        Args: Record<string, never>;
+        Returns: boolean;
+      };
+      create_pack: {
+        Args: {
+          p_slug: string;
+          p_name: string;
+          p_description?: string | null;
+          p_accent?: string;
+        };
+        Returns: PackRow;
+      };
     };
     Enums: Record<never, never>;
     CompositeTypes: Record<never, never>;

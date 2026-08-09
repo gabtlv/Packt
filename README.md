@@ -49,7 +49,15 @@ npx supabase link --project-ref <your-project-ref>
 npx supabase db push                       # applies supabase/migrations/*.sql
 ```
 
-Then seed twelve staff cards so the first pack anyone opens isn't empty. Paste
+Allow organizers to create event binders from the app by inserting their Google
+email (lowercase) into `admin_emails`:
+
+```sql
+insert into admin_emails (email) values ('you@gmail.com');
+```
+
+Signed in with that account, open **All Binders → New binder**. Optionally seed
+staff cards so the first pack anyone opens isn't empty — paste
 `supabase/seed.sql` into the SQL editor, or:
 
 ```bash

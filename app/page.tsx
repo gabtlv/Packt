@@ -1,26 +1,33 @@
+import Link from "next/link";
+
 import { PackIntro } from "@/components/pack/PackIntro";
 import { SiteHeader } from "@/components/SiteHeader";
 import { createClient } from "@/lib/supabase/server";
 import { getBinderPage } from "@/lib/services/binder";
-import { DEFAULT_PACK_SLUG, getPackBySlug } from "@/lib/services/packs";
+import {
+  DEFAULT_PACK_SLUG,
+  getPackBySlug,
+  listPacks,
+} from "@/lib/services/packs";
 
 /**
- * Site home — the welcome for the default set. Other binders have the same
- * pitch at `/packs/[slug]/about`, linked from the binder title.
+ * Site home — the welcome for the default set when it exists, otherwise the
+ * first binder on the shelf. Empty shelf → point people at All Binders.
  */
 export default async function HomeRoute({ searchParams }: PageProps<"/">) {
   const query = await searchParams;
   const error = typeof query.error === "string" ? query.error : null;
 
   const supabase = await createClient();
-  const pack = await getPackBySlug(supabase, DEFAULT_PACK_SLUG);
+  const preferred = await getPackBySlug(supabase, DEFAULT_PACK_SLUG);
+  const pack = preferred ?? (await listPacks(supabase))[0] ?? null;
   const preview = pack
     ? await getBinderPage(supabase, pack.id, { page: 1 })
     : null;
 
   return (
     <>
-      <SiteHeader next={`/packs/${DEFAULT_PACK_SLUG}`} />
+      <SiteHeader next={pack ? `/packs/${pack.slug}` : "/packs"} />
 
       {pack && preview ? (
         <PackIntro
@@ -37,9 +44,14 @@ export default async function HomeRoute({ searchParams }: PageProps<"/">) {
               Sign-in didn&apos;t complete: {error}
             </p>
           ) : null}
-          <p className="text-ink-soft">
-            No default set yet. Run the seed to create Packt.
+          <h1 className="display text-4xl">No binders yet</h1>
+          <p className="mt-3 max-w-md text-ink-soft">
+            Event sets will show up on the bookshelf when organizers put them
+            there.
           </p>
+          <Link href="/packs" className="btn btn--accent mt-6">
+            All Binders
+          </Link>
         </main>
       )}
     </>
