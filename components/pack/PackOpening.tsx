@@ -18,8 +18,12 @@ type Props = {
 
 type Phase = "sealed" | "tearing" | "revealed" | "failed";
 
-/** Minimum time the tear animation is on screen, so the reveal lands as a beat. */
-const TEAR_MS = 900;
+/**
+ * Minimum time the tear animation is on screen, so the reveal lands as a beat.
+ * Covers the shake plus the two halves of the wrapper clearing the viewport —
+ * see the `pack-shake` / `pack-crown-lift` / `pack-body-drop` keyframes.
+ */
+const TEAR_MS = 1500;
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -158,10 +162,23 @@ export function PackOpening({
         onClick={open}
         style={{ ["--pack-accent" as string]: packAccent }}
       >
-        <span className="foilpack__sheen" aria-hidden="true" />
-        <span className="foilpack__wordmark">{packName}</span>
-        <span className="foilpack__hint">
-          {phase === "tearing" ? "Opening…" : "Tear it open"}
+        {/* Two pieces of one wrapper. They overlap along a ragged seam while
+            sealed — same foil, same box — so the pack reads as solid until the
+            tear pulls the crown up and lets the body fall away. */}
+        <span className="foilpack__piece foilpack__piece--body" aria-hidden="true">
+          <span className="foilpack__sheen" />
+          <span className="foilpack__torn" />
+        </span>
+        <span className="foilpack__piece foilpack__piece--crown" aria-hidden="true">
+          <span className="foilpack__sheen" />
+        </span>
+        <span className="foilpack__burst" aria-hidden="true" />
+
+        <span className="foilpack__label">
+          <span className="foilpack__wordmark">{packName}</span>
+          <span className="foilpack__hint">
+            {phase === "tearing" ? "Opening…" : "Tear it open"}
+          </span>
         </span>
       </button>
 

@@ -64,7 +64,7 @@ export function PackIntro({
                 Make a Card.
                 <br />
                 <span className="hero-title__line">
-                  Pull a Stranger.
+                  Unlock a Memory.
                   <StackMark className="hero-title__mark" />
                 </span>
               </h1>

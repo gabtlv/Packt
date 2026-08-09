@@ -1294,6 +1294,9 @@ body {
   .stage {
     background-color: var(--color-ink);
     color: var(--color-stock);
+    /* The torn wrapper leaves through the top and bottom of the frame; without
+       this the page grows scrollbars to chase it. */
+    overflow: clip;
     background-image: radial-gradient(
       ellipse 60% 50% at 50% 38%,
       rgb(46 196 214 / 0.18) 0%,
@@ -1368,6 +1371,14 @@ body {
 
   /* -----------------------------------------------------------------------
      The sealed foil pack.
+
+     The pack is one wrapper cut into two pieces along a ragged seam: the crown
+     (the strip that gets ripped off) and the body (the part you hold). Both are
+     full-size layers painting the same foil in the same box, so while they sit
+     on top of each other the pack reads as a single solid object — the seam only
+     exists once the tear pulls them apart. The body's cut runs a little above
+     the crown's so the two always overlap; a gap there would flash a hairline of
+     the stage through the middle of a sealed pack.
   ----------------------------------------------------------------------- */
   .foilpack {
     position: relative;
@@ -1378,12 +1389,24 @@ body {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 0.75rem;
-    overflow: hidden;
     cursor: pointer;
     border: none;
-    border-radius: 0.4rem;
+    background: none;
     color: #fff;
+    /* On the group rather than the pieces: one shadow under a sealed pack, and
+       once it splits each piece carries its own, ragged edge included. */
+    filter: drop-shadow(0 18px 30px rgb(0 0 0 / 0.6));
+    transition: transform 0.2s ease;
+  }
+
+  .foilpack:hover:not(:disabled) {
+    transform: translateY(-3px) scale(1.02);
+  }
+
+  .foilpack__piece {
+    position: absolute;
+    inset: 0;
+    border-radius: 0.4rem;
     background-color: var(--pack-accent, var(--color-sun));
     background-image:
       repeating-linear-gradient(
@@ -1397,28 +1420,77 @@ body {
         var(--pack-accent, #f5a524) 45%,
         color-mix(in srgb, var(--pack-accent, #f5a524) 60%, #fff) 100%
       );
-    box-shadow:
-      0 0 0 1px rgb(0 0 0 / 0.35),
-      0 18px 40px -12px rgb(0 0 0 / 0.7);
-    transition: transform 0.2s ease;
+    /* The sheen sweeps edge to edge; without this it would run off the piece. */
+    overflow: hidden;
+    will-change: transform, opacity;
   }
 
-  .foilpack:hover:not(:disabled) {
-    transform: translateY(-3px) scale(1.02);
+  .foilpack__piece--body {
+    clip-path: polygon(
+      0 11.4%,
+      5% 13.4%,
+      12% 11%,
+      21% 14%,
+      30% 11.2%,
+      39% 13.6%,
+      48% 10.8%,
+      57% 14.2%,
+      66% 11%,
+      75% 13.8%,
+      84% 10.6%,
+      92% 13.2%,
+      100% 10.8%,
+      100% 100%,
+      0 100%
+    );
   }
 
-  /* The crimped top seam. */
-  .foilpack::before {
+  .foilpack__piece--crown {
+    z-index: 2;
+    clip-path: polygon(
+      0 0,
+      100% 0,
+      100% 12.4%,
+      92% 14.8%,
+      84% 12.2%,
+      75% 15.4%,
+      66% 12.6%,
+      57% 15.8%,
+      48% 12.4%,
+      39% 15.2%,
+      30% 12.8%,
+      21% 15.6%,
+      12% 12.6%,
+      5% 15%,
+      0 13%
+    );
+  }
+
+  /* The crimped top seam, on the crown so it leaves with it. */
+  .foilpack__piece--crown::after {
     content: "";
     position: absolute;
     inset: 0 0 auto 0;
-    height: 12%;
+    height: 9%;
     background-image: repeating-linear-gradient(
       90deg,
       rgb(0 0 0 / 0.28) 0 3px,
       transparent 3px 6px
     );
     border-bottom: 1px dashed rgb(0 0 0 / 0.4);
+  }
+
+  /* The pale inside of the foil, only visible once the seam actually opens. */
+  .foilpack__torn {
+    position: absolute;
+    inset: 10% 0 auto 0;
+    height: 7%;
+    opacity: 0;
+    background-image: linear-gradient(
+      rgb(255 255 255 / 0.75),
+      rgb(255 255 255 / 0.1) 55%,
+      transparent
+    );
   }
 
   .foilpack__sheen {
@@ -1443,8 +1515,31 @@ body {
     }
   }
 
-  .foilpack__wordmark {
+  /* The flash of light at the moment the seam gives. */
+  .foilpack__burst {
+    position: absolute;
+    inset: -40%;
+    z-index: 1;
+    opacity: 0;
+    pointer-events: none;
+    background-image: radial-gradient(
+      circle at 50% 16%,
+      rgb(255 255 255 / 0.9) 0%,
+      rgb(46 196 214 / 0.35) 35%,
+      transparent 68%
+    );
+  }
+
+  .foilpack__label {
     position: relative;
+    z-index: 3;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .foilpack__wordmark {
     font-family: var(--font-display);
     font-weight: 800;
     font-size: 1.5rem;
@@ -1454,7 +1549,6 @@ body {
   }
 
   .foilpack__hint {
-    position: relative;
     font-family: var(--font-mono);
     font-size: 0.6875rem;
     letter-spacing: 0.14em;
@@ -1464,27 +1558,134 @@ body {
     border-radius: 999px;
   }
 
+  /* -----------------------------------------------------------------------
+     Tearing it open.
+
+     Three beats, all on one clock: the pack rattles as it's worked open, the
+     seam gives in a flash of light, then the crown sails up out of frame while
+     the body falls out the bottom. Each piece fades only in its last stretch,
+     once it is mostly gone, so nothing dissolves in the middle of the stage.
+  ----------------------------------------------------------------------- */
   .foilpack[data-tearing="true"] {
-    animation: tear 0.9s ease-in both;
+    animation: pack-shake 0.72s ease-in-out both;
+    pointer-events: none;
   }
 
-  @keyframes tear {
+  /* A damped rattle: the swings shrink and the pack creeps toward the viewer, so
+     it reads as tension building rather than as a loop of the same jolt. */
+  @keyframes pack-shake {
     0% {
-      transform: none;
+      transform: translate3d(0, 0, 0) rotate(0deg) scale(1);
     }
-    18% {
-      transform: rotate(-1.5deg) scale(1.03);
+    12% {
+      transform: translate3d(-1.5%, 0, 0) rotate(-1.7deg) scale(1.012);
     }
-    36% {
-      transform: rotate(1.5deg) scale(1.03);
+    27% {
+      transform: translate3d(1.4%, 0, 0) rotate(1.55deg) scale(1.022);
     }
-    54% {
-      transform: rotate(-1deg) scale(1.05);
+    42% {
+      transform: translate3d(-1%, 0, 0) rotate(-1.15deg) scale(1.032);
+    }
+    57% {
+      transform: translate3d(0.7%, 0, 0) rotate(0.8deg) scale(1.04);
+    }
+    72% {
+      transform: translate3d(-0.4%, 0, 0) rotate(-0.45deg) scale(1.048);
+    }
+    87% {
+      transform: translate3d(0.18%, 0, 0) rotate(0.2deg) scale(1.054);
     }
     100% {
-      transform: scale(1.15);
+      transform: translate3d(0, 0, 0) rotate(0deg) scale(1.06);
+    }
+  }
+
+  .foilpack[data-tearing="true"] .foilpack__piece--crown {
+    animation: pack-crown-lift 1.02s cubic-bezier(0.3, 0.72, 0.28, 1) 0.62s both;
+  }
+
+  @keyframes pack-crown-lift {
+    0% {
+      transform: translate3d(0, 0, 0) rotate(0deg);
+      opacity: 1;
+    }
+    /* The catch: the strip tugs, hangs for an instant, then releases. */
+    14% {
+      transform: translate3d(-1%, -6%, 0) rotate(-2.4deg);
+      opacity: 1;
+    }
+    70% {
+      opacity: 1;
+    }
+    100% {
+      transform: translate3d(3%, -72vh, 0) rotate(9deg);
       opacity: 0;
-      clip-path: polygon(0 0, 100% 0, 100% 14%, 0 22%);
+    }
+  }
+
+  .foilpack[data-tearing="true"] .foilpack__piece--body,
+  .foilpack[data-tearing="true"] .foilpack__label {
+    animation: pack-body-drop 1.05s cubic-bezier(0.42, 0.02, 0.72, 0.62) 0.66s
+      both;
+  }
+
+  @keyframes pack-body-drop {
+    0% {
+      transform: translate3d(0, 0, 0) rotate(0deg);
+      opacity: 1;
+    }
+    /* Held a beat after the crown goes, then gravity takes it. */
+    16% {
+      transform: translate3d(0, 1.5%, 0) rotate(0.7deg);
+      opacity: 1;
+    }
+    72% {
+      opacity: 1;
+    }
+    100% {
+      transform: translate3d(-2%, 88vh, 0) rotate(-6deg);
+      opacity: 0;
+    }
+  }
+
+  /* The sheen would keep sweeping across pieces that are on their way out. */
+  .foilpack[data-tearing="true"] .foilpack__sheen {
+    animation: none;
+    opacity: 0.3;
+  }
+
+  .foilpack[data-tearing="true"] .foilpack__torn {
+    animation: pack-torn-edge 0.5s ease-out 0.62s both;
+  }
+
+  @keyframes pack-torn-edge {
+    0% {
+      opacity: 0;
+    }
+    35% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0.55;
+    }
+  }
+
+  .foilpack[data-tearing="true"] .foilpack__burst {
+    animation: pack-burst 0.62s ease-out 0.6s both;
+  }
+
+  @keyframes pack-burst {
+    0% {
+      opacity: 0;
+      transform: scale(0.7);
+    }
+    22% {
+      opacity: 0.85;
+      transform: scale(1);
+    }
+    100% {
+      opacity: 0;
+      transform: scale(1.35);
     }
   }
 
@@ -1990,14 +2191,31 @@ body {
     transition: none;
   }
 
-  /* The pack still opens and the card still arrives — they just don't perform. */
-  .foilpack__sheen {
+  /* The pack still opens and the card still arrives — they just don't perform.
+     No rattle, no flying wrapper: the pack simply dims while it opens. */
+  .foilpack__sheen,
+  .foilpack__burst,
+  .foilpack__torn {
     animation: none;
+  }
+
+  .foilpack__sheen {
     opacity: 0.25;
   }
 
-  .foilpack[data-tearing="true"] {
+  .foilpack__burst,
+  .foilpack__torn {
+    opacity: 0;
+  }
+
+  .foilpack[data-tearing="true"],
+  .foilpack[data-tearing="true"] .foilpack__piece,
+  .foilpack[data-tearing="true"] .foilpack__label {
     animation: none;
+    transform: none;
+  }
+
+  .foilpack[data-tearing="true"] {
     opacity: 0.4;
   }
 
