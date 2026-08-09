@@ -129,6 +129,10 @@ export type Database = {
         Args: { p_pack_id: string };
         Returns: { has_contributed: boolean; unopened_packs: number }[];
       };
+      ensure_my_profile: {
+        Args: Record<string, never>;
+        Returns: ProfileRow;
+      };
     };
     Enums: Record<never, never>;
     CompositeTypes: Record<never, never>;

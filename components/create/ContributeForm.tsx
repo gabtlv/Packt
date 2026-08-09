@@ -132,7 +132,6 @@ export function ContributeForm({
         border_variant: fields.border_variant,
         school_or_work: fields.school_or_work,
         favorite_media: fields.favorite_media,
-        social_label: null,
         social_url: fields.social_url,
         prompt_1_key: fields.prompt_1_key,
         prompt_1_answer: fields.prompt_1_answer,

@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 
+import { ensureMyProfile } from "@/lib/services/profiles";
 import { createClient } from "@/lib/supabase/server";
 
 /**
@@ -35,6 +36,13 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(
       `${origin}/?error=${encodeURIComponent(error.message)}`,
     );
+  }
+
+  // Heal users who signed in before handle_new_user existed.
+  try {
+    await ensureMyProfile(supabase);
+  } catch (cause) {
+    console.error("ensure_my_profile after OAuth failed", cause);
   }
 
   return NextResponse.redirect(`${origin}${next}`);

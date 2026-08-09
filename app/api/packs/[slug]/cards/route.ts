@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { contributeSchema } from "@/lib/schemas";
 import { AlreadyContributedError, contributeCard } from "@/lib/services/cards";
 import { getPackBySlug } from "@/lib/services/packs";
+import { ensureMyProfile } from "@/lib/services/profiles";
 import { createClient } from "@/lib/supabase/server";
 
 /**
@@ -37,19 +38,16 @@ export async function POST(
     );
   }
 
-  // The name on the card comes from the Google identity, not the request body.
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("display_name")
-    .eq("id", user.id)
-    .maybeSingle();
-
   try {
+    // cards.owner_id → profiles. Users who signed in before the signup trigger
+    // was applied have no row yet; create it from auth metadata.
+    const profile = await ensureMyProfile(supabase);
+
     const card = await contributeCard(supabase, {
       packId: pack.id,
       userId: user.id,
       displayName:
-        profile?.display_name ?? user.email?.split("@")[0] ?? "Anonymous",
+        profile.display_name || user.email?.split("@")[0] || "Anonymous",
       input: parsed.data,
     });
 

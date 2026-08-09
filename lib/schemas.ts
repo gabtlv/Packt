@@ -25,12 +25,13 @@ const storagePath = z
     "must be a path this app uploaded",
   );
 
+/** Empty / missing / null optional text → null for the DB. */
 const trimmedOptional = (max: number) =>
   z
     .string()
     .trim()
     .max(max)
-    .optional()
+    .nullish()
     .transform((v) => (v ? v : null));
 
 /** Shared by the contribute form and the POST route, so both agree on the rules. */
@@ -47,11 +48,16 @@ export const contributeSchema = z
       .string()
       .trim()
       .max(200)
-      .optional()
-      .transform((v) => (v ? v : null))
+      .nullish()
+      .transform((v) => {
+        if (!v) return null;
+        // People paste "github.com/you" — treat that as https.
+        if (!/^https?:\/\//i.test(v)) return `https://${v}`;
+        return v;
+      })
       .refine(
-        (v) => v === null || /^https?:\/\/.+/.test(v),
-        "must start with http:// or https://",
+        (v) => v === null || /^https?:\/\/.+/i.test(v),
+        "must be a valid link",
       ),
 
     prompt_1_key: z.enum(PROMPT_KEYS),
