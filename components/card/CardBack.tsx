@@ -93,6 +93,10 @@ export function CardBack({ card, packName, avatarUrl, facingAway, id }: Props) {
           <span className="card__serial">{formatSerial(card.serial)}</span>
         </div>
       </div>
+
+      {/* The back gets the same swept highlight as the front, so the light
+          carries straight through the turn instead of stopping halfway. */}
+      <div className="card__gloss" aria-hidden="true" />
     </div>
   );
 }

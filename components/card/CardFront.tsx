@@ -78,6 +78,10 @@ export function CardFront({
       </div>
 
       <div className="card__foil" aria-hidden="true" />
+      {/* Specular band, swept across the face only while the card is turning.
+          Kept separate from the pointer-driven foil so the two never fight over
+          the same opacity. */}
+      <div className="card__gloss" aria-hidden="true" />
     </div>
   );
 }

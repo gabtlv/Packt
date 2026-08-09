@@ -18,7 +18,7 @@ export async function SiteHeader({ next = "/packs/summerhacks" }: Props) {
     <header className="border-b border-sleeve-edge">
       <div className="site-header mx-auto w-full max-w-6xl px-5 py-3">
         <Link href="/" className="site-header__brand display text-lg no-underline">
-          Card Binder
+          Packt
         </Link>
 
         <Link href="/packs" className="site-header__binders">

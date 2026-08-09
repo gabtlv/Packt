@@ -25,7 +25,7 @@ const spaceMono = Space_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Card Binder — Packt",
+  title: "Packt",
   description:
     "Make a trading card about yourself, add it to the pool, and open a pack to meet someone else in the cohort.",
 };

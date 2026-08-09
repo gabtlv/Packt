@@ -31,6 +31,15 @@ type Props = {
  * card. Only the face currently showing is exposed to assistive tech — otherwise
  * both faces would be read out at once, since backface-visibility is purely
  * visual.
+ *
+ * Motion shape: four nested transform layers, because the card is doing four
+ * things at once on four different clocks and one transform can only be on one
+ * of them. Lift eases in and out with hover/press, pop is a one-shot keyframe
+ * fired by a click, tilt has to track the pointer with no easing at all, and the
+ * flip has to keep its whole arc even while the pointer is still moving over the
+ * card. Collapsing any two of them into one element means whichever wins the
+ * `transform` property cancels the other — which is what used to make a click
+ * land the far face instantly whenever the pointer was hovering.
  */
 export function Card({
   card,
@@ -42,10 +51,23 @@ export function Card({
 }: Props) {
   const [flipped, setFlipped] = useState(false);
   const [tilting, setTilting] = useState(false);
+  const [pressed, setPressed] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const backId = useId();
 
-  const flip = useCallback(() => setFlipped((f) => !f), []);
+  const flip = useCallback(() => {
+    setFlipped((f) => !f);
+
+    // Restart the one-shot flip choreography (pop, bloom, gloss sweep). Written
+    // to the DOM rather than held in state because re-flipping mid-flip has to
+    // replay the animations from zero, and CSS only restarts an animation when
+    // it stops matching and matches again — hence the forced reflow between.
+    const el = ref.current;
+    if (!el) return;
+    delete el.dataset.flipping;
+    void el.offsetWidth;
+    el.dataset.flipping = "true";
+  }, []);
 
   const onPointerMove = useCallback(
     (event: React.PointerEvent<HTMLDivElement>) => {
@@ -58,21 +80,21 @@ export function Card({
       const px = (event.clientX - rect.left) / rect.width;
       const py = (event.clientY - rect.top) / rect.height;
 
-      // Flipping mirrors the card, so mirror the horizontal tilt to keep it
-      // tracking the pointer rather than running away from it.
-      const direction = flipped ? -1 : 1;
-      el.style.setProperty("--ry", `${(px - 0.5) * 2 * MAX_TILT * direction}deg`);
+      // No mirroring for the flipped state: tilt is an ancestor of the flip, so
+      // it is applied last, in screen space, and tracks the pointer either way.
+      el.style.setProperty("--ry", `${(px - 0.5) * 2 * MAX_TILT}deg`);
       el.style.setProperty("--rx", `${-(py - 0.5) * 2 * MAX_TILT}deg`);
       el.style.setProperty("--foil-angle", `${90 + (px - 0.5) * 120}deg`);
       setTilting(true);
     },
-    [flipped],
+    [],
   );
 
   const onPointerLeave = useCallback(() => {
     const el = ref.current;
     if (!el) return;
     setTilting(false);
+    setPressed(false);
     el.style.setProperty("--rx", "0deg");
     el.style.setProperty("--ry", "0deg");
   }, []);
@@ -84,26 +106,40 @@ export function Card({
       style={variantStyle(card.border_variant)}
       data-tilting={tilting}
       data-flipped={flipped}
+      data-pressed={pressed}
       onClick={flip}
       onPointerMove={onPointerMove}
       onPointerLeave={onPointerLeave}
+      onPointerDown={() => setPressed(true)}
+      onPointerUp={() => setPressed(false)}
+      onPointerCancel={() => setPressed(false)}
     >
-      <div className="card">
-        <CardFront
-          card={card}
-          packName={packName}
-          size={size}
-          priority={priority}
-          facingAway={flipped}
-          photoUrl={photoUrl}
-        />
-        <CardBack
-          id={backId}
-          card={card}
-          packName={packName}
-          avatarUrl={avatarUrl}
-          facingAway={!flipped}
-        />
+      {/* Sits behind the card, so it can bloom past the edges during a flip
+          without ever being a lit rectangle over an edge-on card. */}
+      <span className="card__glow" aria-hidden="true" />
+
+      <div className="card-lift">
+        <div className="card-pop">
+          <div className="card-tilt">
+            <div className="card">
+              <CardFront
+                card={card}
+                packName={packName}
+                size={size}
+                priority={priority}
+                facingAway={flipped}
+                photoUrl={photoUrl}
+              />
+              <CardBack
+                id={backId}
+                card={card}
+                packName={packName}
+                avatarUrl={avatarUrl}
+                facingAway={!flipped}
+              />
+            </div>
+          </div>
+        </div>
       </div>
 
       <button

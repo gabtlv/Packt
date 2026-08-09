@@ -483,12 +483,15 @@ body {
      untouched — the framing is what turns it into a card.
   ----------------------------------------------------------------------- */
   .card-shell {
-    /* Perspective lives here so both faces share one vanishing point. */
+    /* Perspective lives here so both faces share one vanishing point. Pulled in
+       from 1100px: a shorter throw makes the near edge of a turning card swing
+       visibly wider than the far one, which is most of what sells the flip as
+       an object rotating rather than a rectangle being squashed. */
     position: relative;
     display: block;
     width: 100%;
     aspect-ratio: 5 / 7;
-    perspective: 1100px;
+    perspective: 820px;
     /* Type container. Every size printed on a card is a share of that card's
        own width — the same card at 140px in a phone pocket, 280px on the
        desktop sheet and 320px on the reveal, rather than one layout with type
@@ -536,31 +539,144 @@ body {
     }
   }
 
+  /* --- the four transform layers ---------------------------------------- */
+
+  /* Each layer owns exactly one transform on exactly one clock; see the note in
+     Card.tsx for why they can't be merged. They stack lift → pop → tilt → flip,
+     outermost first, so the flip happens inside the card's own frame while lift
+     and tilt are applied last, in screen space. */
+  .card-lift,
+  .card-pop,
+  .card-tilt,
   .card {
     position: relative;
     width: 100%;
     height: 100%;
+    transform-style: preserve-3d;
+  }
+
+  /* Layer 1 — the resting state responds to the pointer: rises and grows a
+     little under it, gives under a press. Same easing as the flip settle, so
+     hover and click read as one piece of behaviour rather than two. */
+  .card-lift {
+    /* Above .card__glow, which is its previous sibling. */
+    z-index: 1;
+    border-radius: 0.45rem;
+    transition:
+      transform 0.3s cubic-bezier(0.2, 0.9, 0.25, 1),
+      box-shadow 0.3s ease;
+  }
+
+  /* Hover-lift is for pointers only. On touch there is no hover to leave, so
+     the card would come up on tap and stay up until something else was tapped. */
+  @media (hover: hover) {
+    .card-shell:hover .card-lift,
+    .card-shell:focus-within .card-lift {
+      transform: translateY(-0.45rem) scale(1.04);
+      box-shadow:
+        0 1.1rem 1.9rem -0.9rem rgb(20 33 61 / 0.5),
+        0 0 1.5rem -0.5rem color-mix(in srgb, var(--variant) 80%, transparent);
+    }
+  }
+
+  /* Press. Below the hover rule on purpose — same specificity, so source order
+     is what makes the press win while the pointer is still on the card. */
+  .card-shell[data-pressed="true"] .card-lift {
+    transform: scale(0.965);
+    transition-duration: 0.08s;
+  }
+
+  /* Layer 2 — the click. A one-shot punch toward the viewer that peaks around
+     the edge-on moment, so the card is at its biggest exactly when it has the
+     least width on screen and would otherwise seem to disappear. */
+  .card-shell[data-flipping="true"] .card-pop {
+    animation: card-flip-pop 0.66s cubic-bezier(0.3, 0.85, 0.32, 1);
+  }
+
+  @keyframes card-flip-pop {
+    0% {
+      transform: scale(0.97);
+    }
+    42% {
+      transform: translateY(-0.9rem) scale(1.09);
+    }
+    72% {
+      transform: translateY(-0.15rem) scale(1.01);
+    }
+    100% {
+      transform: none;
+    }
+  }
+
+  /* Layer 3 — pointer tilt. */
+  .card-tilt {
+    transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+    transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  /* While the pointer is on the card, tilt should track it with no easing lag.
+     Scoped to the tilt layer only — this is what used to sit on .card and take
+     the whole flip animation down with it. */
+  .card-shell[data-tilting="true"] .card-tilt {
+    transition: none;
+  }
+
+  /* Layer 4 — the flip itself. The easing overshoots 180° by a few degrees and
+     rocks back, which is what a card with some mass in it does when you turn it
+     over. It runs at its own pace no matter what the other three are doing. */
+  .card {
     /* The one size everything printed on the card is measured in ems of. It
        lives here rather than on .card-shell because cqi on the container itself
        would resolve against the container's own ancestor, not the card. The
        floor and ceiling are the only absolute type sizes on a card: below them
        the print stops being legible, above them it stops looking printed. */
     font-size: clamp(0.62rem, 4.6cqi, 1rem);
-    transform-style: preserve-3d;
-    transition: transform 0.55s cubic-bezier(0.3, 0.9, 0.2, 1);
-    /* --rx/--ry come from the pointer; --flip is 0 or 180deg. */
-    transform: rotateX(var(--rx, 0deg))
-      rotateY(calc(var(--ry, 0deg) + var(--flip, 0deg)));
+    transition: transform 0.66s cubic-bezier(0.32, 1.14, 0.36, 1);
+    transform: rotateY(var(--flip, 0deg));
   }
 
   .card-shell[data-flipped="true"] .card {
     --flip: 180deg;
   }
 
-  /* While the pointer is on the card, tilt should track it with no easing lag. */
-  .card-shell[data-tilting="true"] .card {
-    transition: none;
+  /* Colour thrown off the card as it turns, behind everything so it can bloom
+     past the edges. Behind rather than over because an overlay would still be a
+     full-width lit rectangle at the halfway point, when the card itself is a
+     sliver — the giveaway that a flip is being faked. */
+  .card__glow {
+    position: absolute;
+    inset: -14%;
+    z-index: 0;
+    pointer-events: none;
+    opacity: 0;
+    border-radius: 28%;
+    background-image: radial-gradient(
+      closest-side,
+      color-mix(in srgb, var(--variant) 80%, transparent) 0%,
+      color-mix(in srgb, var(--variant) 34%, transparent) 58%,
+      transparent 100%
+    );
   }
+
+  .card-shell[data-flipping="true"] .card__glow {
+    animation: card-flip-glow 0.66s ease-out;
+  }
+
+  @keyframes card-flip-glow {
+    0% {
+      opacity: 0;
+      transform: scale(0.84);
+    }
+    40% {
+      opacity: 0.9;
+      transform: scale(1.06);
+    }
+    100% {
+      opacity: 0;
+      transform: scale(1.16);
+    }
+  }
+
 
   .card__face {
     /* The two proportions the whole card is built from: the coloured mat around
@@ -752,6 +868,52 @@ body {
   .card__face[data-rarity="holo"] .card__foil,
   .card__face[data-rarity="rare"] .card__foil {
     opacity: 0.55;
+  }
+
+  /* Specular band for the flip. It lives inside each face rather than over the
+     whole card so it turns with the card and gets clipped to it — the light
+     travels across the leaving face, goes with it through edge-on, and comes
+     back around on the arriving one. Idle at zero and touched by nothing but
+     the flip, so it can be as bright as it likes without affecting hover. */
+  .card__gloss {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    pointer-events: none;
+    opacity: 0;
+    mix-blend-mode: screen;
+    background-repeat: no-repeat;
+    background-size: 260% 100%;
+    background-position: -40% 0;
+    background-image: linear-gradient(
+      104deg,
+      transparent 33%,
+      rgb(255 255 255 / 0.82) 43%,
+      rgb(184 240 255 / 0.72) 49%,
+      rgb(255 226 168 / 0.7) 55%,
+      transparent 67%
+    );
+  }
+
+  .card-shell[data-flipping="true"] .card__gloss {
+    animation: card-flip-gloss 0.66s ease-out;
+  }
+
+  @keyframes card-flip-gloss {
+    0% {
+      opacity: 0;
+      background-position: -45% 0;
+    }
+    18% {
+      opacity: 1;
+    }
+    78% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+      background-position: 145% 0;
+    }
   }
 
   /* --- back ------------------------------------------------------------- */
@@ -1793,10 +1955,24 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .card {
     transition: none;
-    transform: rotateY(var(--flip, 0deg));
   }
 
-  .card__foil {
+  /* Lift, pop and tilt are all decoration — they go entirely, leaving the flip
+     to happen instantly on a card that never moves otherwise. These beat the
+     hover/press/flip rules despite being less specific: everything they are
+     overriding is inside @layer components, and unlayered styles win outright. */
+  .card-lift,
+  .card-pop,
+  .card-tilt {
+    transform: none;
+    transition: none;
+    animation: none;
+    box-shadow: none;
+  }
+
+  .card__foil,
+  .card__gloss,
+  .card__glow {
     display: none;
   }
 
