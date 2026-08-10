@@ -16,6 +16,9 @@ export type BorderVariant =
 
 export type Rarity = "common" | "rare" | "holo";
 
+/** Which front the card is printed on. See components/card/fronts/. */
+export type CardDesign = "sporty" | "vintage";
+
 export type CardRow = {
   id: string;
   pack_id: string;
@@ -24,18 +27,29 @@ export type CardRow = {
   photo_path: string;
   thumb_path: string;
   border_variant: BorderVariant;
+  card_design: CardDesign;
   rarity: Rarity;
   display_name: string;
+  /** Column kept, but the form now labels this "Location". */
   school_or_work: string | null;
+  explanation: string;
   favorite_media: string | null;
   social_label: string | null;
   social_url: string | null;
-  prompt_1_key: string;
-  prompt_1_answer: string;
-  prompt_2_key: string;
-  prompt_2_answer: string;
-  fun_fact: string;
   created_at: string;
+} & RetiredCardColumns;
+
+/**
+ * Columns from the three-question card, kept by migration 0009 so cards made
+ * before it keep what their owner wrote. Nothing reads or writes them; they are
+ * here only so the Row type still describes what the table returns.
+ */
+type RetiredCardColumns = {
+  prompt_1_key: string | null;
+  prompt_1_answer: string | null;
+  prompt_2_key: string | null;
+  prompt_2_answer: string | null;
+  fun_fact: string | null;
 };
 
 export type PackRow = {
@@ -74,7 +88,10 @@ export type PackGrantRow = {
 }
 
 /** Fields the client supplies when contributing. The rest are set server-side. */
-export type CardInsert = Omit<CardRow, "id" | "serial" | "created_at" | "rarity"> & {
+export type CardInsert = Omit<
+  CardRow,
+  "id" | "serial" | "created_at" | "rarity" | keyof RetiredCardColumns
+> & {
   rarity?: Rarity;
 };
 

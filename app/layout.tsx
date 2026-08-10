@@ -1,13 +1,26 @@
 import type { Metadata } from "next";
-import { Archivo, Newsreader, Space_Mono } from "next/font/google";
+import { Alfa_Slab_One, Archivo, Newsreader, Space_Mono } from "next/font/google";
 
 import "./globals.css";
 
 // Display: heavy and tight, the way a card set's logo is locked up.
+//
+// Loaded as the variable font rather than a set of static cuts, because the
+// Sporty and Vintage card fronts need Archivo Black and Archivo Narrow — which
+// are font-weight: 900 and font-stretch: 62% on the wdth axis, and `axes` is only
+// allowed when no static weights are pinned. One file instead of four, and the
+// fronts cost no extra download.
 const archivo = Archivo({
   variable: "--font-display",
   subsets: ["latin"],
-  weight: ["500", "600", "800"],
+  axes: ["wdth"],
+});
+
+// The Vintage front's headline, and the only thing on the site set in a slab.
+const alfaSlabOne = Alfa_Slab_One({
+  variable: "--font-slab",
+  subsets: ["latin"],
+  weight: "400",
 });
 
 // Body: card backs have always used a small warm serif for flavour text.
@@ -36,7 +49,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       // Extensions (LanguageTool, Grammarly) stamp attributes on <html> before hydration.
       suppressHydrationWarning
-      className={`${archivo.variable} ${newsreader.variable} ${spaceMono.variable} h-full`}
+      className={`${archivo.variable} ${alfaSlabOne.variable} ${newsreader.variable} ${spaceMono.variable} h-full`}
     >
       <body className="min-h-full flex flex-col">{children}</body>
     </html>

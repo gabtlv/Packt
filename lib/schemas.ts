@@ -1,7 +1,5 @@
 import { z } from "zod";
 
-import { PROMPT_KEYS } from "@/lib/prompts";
-
 export const BORDER_VARIANTS = [
   "amber",
   "cyan",
@@ -10,6 +8,13 @@ export const BORDER_VARIANTS = [
   "lime",
   "slate",
 ] as const;
+
+/**
+ * The card fronts a contributor can choose between. Like BORDER_VARIANTS, this
+ * has to stay in step with `CardDesign` in lib/database.types.ts and the
+ * `.card__face--*` rules in app/globals.css.
+ */
+export const CARD_DESIGNS = ["sporty", "vintage"] as const;
 
 /**
  * Storage paths this app produced: `{uid}/{uuid}/full.webp`. Validated so a
@@ -35,42 +40,36 @@ const trimmedOptional = (max: number) =>
     .transform((v) => (v ? v : null));
 
 /** Shared by the contribute form and the POST route, so both agree on the rules. */
-export const contributeSchema = z
-  .object({
-    photo_path: storagePath,
-    thumb_path: storagePath,
-    border_variant: z.enum(BORDER_VARIANTS),
+export const contributeSchema = z.object({
+  photo_path: storagePath,
+  thumb_path: storagePath,
+  border_variant: z.enum(BORDER_VARIANTS),
+  card_design: z.enum(CARD_DESIGNS),
 
-    display_name: z.string().trim().min(1, "required").max(40),
-    school_or_work: trimmedOptional(80),
-    favorite_media: trimmedOptional(80),
-    social_label: trimmedOptional(24),
-    social_url: z
-      .string()
-      .trim()
-      .max(200)
-      .nullish()
-      .transform((v) => {
-        if (!v) return null;
-        // People paste "github.com/you" — treat that as https.
-        if (!/^https?:\/\//i.test(v)) return `https://${v}`;
-        return v;
-      })
-      .refine(
-        (v) => v === null || /^https?:\/\/.+/i.test(v),
-        "must be a valid link",
-      ),
-
-    prompt_1_key: z.enum(PROMPT_KEYS),
-    prompt_1_answer: z.string().trim().min(1, "required").max(160),
-    prompt_2_key: z.enum(PROMPT_KEYS),
-    prompt_2_answer: z.string().trim().min(1, "required").max(160),
-    fun_fact: z.string().trim().min(1, "required").max(160),
-  })
-  .refine((v) => v.prompt_1_key !== v.prompt_2_key, {
-    message: "pick two different prompts",
-    path: ["prompt_2_key"],
-  });
+  display_name: z.string().trim().min(1, "required").max(40),
+  // Labelled "Location" in the form; the column name predates the rename.
+  school_or_work: trimmedOptional(80),
+  // The only question the form asks. Two lines' worth — long enough to say
+  // something, short enough that the card back can still print it.
+  explanation: z.string().trim().min(1, "required").max(200),
+  favorite_media: trimmedOptional(80),
+  social_label: trimmedOptional(24),
+  social_url: z
+    .string()
+    .trim()
+    .max(200)
+    .nullish()
+    .transform((v) => {
+      if (!v) return null;
+      // People paste "github.com/you" — treat that as https.
+      if (!/^https?:\/\//i.test(v)) return `https://${v}`;
+      return v;
+    })
+    .refine(
+      (v) => v === null || /^https?:\/\/.+/i.test(v),
+      "must be a valid link",
+    ),
+});
 
 export type ContributeInput = z.infer<typeof contributeSchema>;
 

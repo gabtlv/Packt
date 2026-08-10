@@ -29,6 +29,7 @@
   --font-display: var(--font-display), ui-sans-serif, system-ui, sans-serif;
   --font-body: var(--font-body), Georgia, serif;
   --font-mono: var(--font-mono), ui-monospace, monospace;
+  --font-slab: var(--font-slab), Rockwell, Georgia, serif;
 }
 
 :root {
@@ -679,13 +680,9 @@ body {
 
 
   .card__face {
-    /* The two proportions the whole card is built from: the coloured mat around
-       everything printed, and where the art window stops so the flavour strip
-       can start. Both give ground on a small card, where the mat is width the
-       fun fact could be using and the strip needs a bigger share of the height
-       to hold the same sentence. */
+    /* The margin the back is printed inside. The fronts don't use it — each one
+       carries its own measurements from Figma. */
     --frame: 4.5%;
-    --art-bottom: 26%;
     position: absolute;
     inset: 0;
     backface-visibility: hidden;
@@ -702,11 +699,17 @@ body {
   }
 
   /* --- front ------------------------------------------------------------ */
+
+  /* Both fronts are laid out on the same grid: the Figma frame is 300×420, which
+     is the 5:7 the shell already locks, so every offset below is a Figma
+     coordinate over 300 or 420 and the whole face scales with its pocket. Rules
+     and strokes are in cqi rather than em for the same reason — they are shares
+     of the card's width, not of its type. */
+
+  /* The art window. Where it sits is the design's business; what it does with an
+     arbitrary upload is not, so that stays here. */
   .card__art {
     position: absolute;
-    inset: var(--frame) var(--frame) var(--art-bottom) var(--frame);
-    border: 1px solid var(--variant-deep);
-    border-radius: 0.15rem;
     overflow: hidden;
     background-color: var(--color-ink);
   }
@@ -735,23 +738,9 @@ body {
     );
   }
 
-  /* Nameplate sits over the photo, so it needs its own ground to stay legible
-     against an arbitrary upload. The scrim is what keeps contrast passing. */
-  .card__plate {
-    position: absolute;
-    inset: auto var(--frame) var(--art-bottom) var(--frame);
-    padding: 0.5em 0.6em 0.45em;
-    background-image: linear-gradient(
-      to top,
-      rgb(20 33 61 / 0.92) 0%,
-      rgb(20 33 61 / 0.78) 60%,
-      rgb(20 33 61 / 0) 100%
-    );
-    color: #fff;
-  }
-
   /* Two lines, then it clips: a nameplate that grows takes the bite out of the
-     photo, and an unbreakable long name would otherwise run off the card. */
+     photo, and an unbreakable long name would otherwise run off the card. Both
+     fronts and the back start from this and override what they need. */
   .card__name {
     display: -webkit-box;
     -webkit-box-orient: vertical;
@@ -779,58 +768,201 @@ body {
     margin-top: 0.2em;
   }
 
-  /* Flavour strip below the art window: the fun fact, in italic, like a real
-     card. It clips its own contents — a fun fact runs to 160 characters, which
-     is more than a small card can print, and unclipped the overflow lands on
-     top of the artwork instead of being cut. */
-  .card__strip {
-    position: absolute;
-    inset: calc(100% - var(--art-bottom)) var(--frame) var(--frame);
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    gap: 0.25em;
-    padding: 0.5em 0.55em;
-    overflow: hidden;
-    border: 1px solid var(--variant-deep);
-    border-radius: 0.15rem;
-    background-color: color-mix(in srgb, var(--color-stock) 88%, var(--variant));
-  }
-
-  .card__flavour {
-    font-family: var(--font-body);
-    font-style: italic;
-    font-size: 0.92em;
-    line-height: 1.3;
-    color: var(--color-ink);
-    /* Takes what the footer leaves and no more. */
-    flex: 1;
-    min-height: 0;
-    overflow: hidden;
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 4;
-  }
-
-  .card__footer {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 0.5em;
-    flex-shrink: 0;
-    font-family: var(--font-mono);
-    font-size: 0.62em;
-    letter-spacing: 0.1em;
-    color: var(--variant-deep);
-    white-space: nowrap;
-  }
-
   /* Set name gives way to the serial when the card is too narrow for both. */
-  .card__footer > span:first-child,
   .card__back-foot > span:first-child {
     overflow: hidden;
     min-width: 0;
     text-overflow: ellipsis;
+  }
+
+  /* --- front: Sporty ----------------------------------------------------- */
+
+  /* Under the art, not over it, so all it darkens is the mat showing past the
+     art's rounded bottom — which is what stops the base reading as flat colour. */
+  .card__sporty-wash {
+    position: absolute;
+    inset: 45.476% 0 0 0;
+    pointer-events: none;
+    background-image: linear-gradient(
+      to bottom,
+      rgb(255 255 255 / 0) 0%,
+      rgb(0 0 0 / 0.62) 62.981%
+    );
+  }
+
+  .card__art--sporty {
+    inset: 3.333% 4.667% 5.952% 4.333%;
+    border: 1.667cqi solid #cfcfcf;
+    border-radius: 0 0 43.333cqi 43.333cqi;
+  }
+
+  /* Deliberately far larger than the card: only the foot of the arc crosses the
+     face, and the face's own overflow does the cropping. max-width has to be
+     released or preflight caps it at the card's own width, which turns the arc
+     into a tall oval running up through the art. */
+  .card__sporty-arc {
+    position: absolute;
+    left: -43.333%;
+    top: -87.381%;
+    width: 186.333%;
+    max-width: none;
+    height: 181.429%;
+    pointer-events: none;
+  }
+
+  /* Runs off both edges — the fade on the right is what makes it read as a strip
+     laid across the card rather than a box drawn on it. */
+  .card__banner {
+    position: absolute;
+    left: -0.667%;
+    top: 75.952%;
+    width: 100.667%;
+    height: 15.952%;
+    background-image: linear-gradient(
+      to right,
+      rgb(0 0 0 / 0.9) 0 67.55%,
+      rgb(0 0 0 / 0) 100%
+    );
+  }
+
+  .card__banner-rule {
+    position: absolute;
+    left: 0;
+    width: 100%;
+    height: 1cqi;
+    background-image: linear-gradient(
+      to right,
+      #fff 0 67.55%,
+      rgb(255 255 255 / 0) 100%
+    );
+  }
+
+  .card__banner-rule--top {
+    top: 5.97%;
+  }
+
+  .card__banner-rule--bottom {
+    top: 89.552%;
+  }
+
+  /* Both sit clear of the decal, which occupies the banner's left third. */
+  .card__face--sporty .card__name {
+    position: absolute;
+    left: 36.755%;
+    right: 4.967%;
+    top: 22.388%;
+    font-weight: 900;
+    font-size: 1.159em;
+    line-height: 1;
+    letter-spacing: 0;
+    color: #fff;
+    -webkit-line-clamp: 1;
+  }
+
+  .card__face--sporty .card__affil {
+    position: absolute;
+    left: 36.755%;
+    right: 4.967%;
+    top: 59.701%;
+    margin-top: 0;
+    font-family: var(--font-display);
+    font-size: 0.725em;
+    line-height: 1;
+    letter-spacing: 0;
+    text-transform: none;
+    color: #fff;
+  }
+
+  .card__sporty-decal {
+    position: absolute;
+    left: 4.333%;
+    top: 71.19%;
+    width: 25%;
+    height: 21.667%;
+    pointer-events: none;
+  }
+
+  /* --- front: Vintage ---------------------------------------------------- */
+
+  /* Printed stock rather than a coloured mat: the colour is the band, and the
+     hairline rule is tinted to match so it reads as one edge. */
+  .card__face--vintage {
+    background-color: #fff;
+    border-color: var(--variant);
+  }
+
+  /* An overlay rather than a border on the face, so everything inside can keep
+     positioning against the full 300×420 frame. */
+  .card__vintage-frame {
+    position: absolute;
+    inset: 0;
+    border: 2cqi solid var(--variant);
+    border-radius: inherit;
+    pointer-events: none;
+  }
+
+  /* The inversion against Sporty: location is the headline, name is the foot.
+     line-height carries the 45px Figma box, which centres the single line
+     without giving up the clamp inherited from .card__affil. */
+  .card__face--vintage .card__affil {
+    position: absolute;
+    left: 4.667%;
+    top: 3.571%;
+    width: 90.333%;
+    margin-top: 0;
+    font-family: var(--font-slab);
+    font-size: 1.739em;
+    line-height: 1.875;
+    letter-spacing: 0;
+    text-align: center;
+    text-transform: none;
+    color: #000;
+  }
+
+  .card__art--vintage {
+    inset: 16.667% 5% 20.238% 4.667%;
+  }
+
+  .card__plate--vintage {
+    position: absolute;
+    left: 4.667%;
+    top: 79.762%;
+    width: 90.333%;
+    height: 16.667%;
+    display: flex;
+    align-items: center;
+    padding-inline: 5.166%;
+    background-color: #000;
+  }
+
+  .card__face--vintage .card__name {
+    /* Stops short of the star, which overlaps the plate's right end. */
+    max-width: 59.4%;
+    font-weight: 400;
+    font-stretch: 62%;
+    font-size: 1.739em;
+    line-height: 1.1;
+    letter-spacing: 0;
+    color: #ffe500;
+    -webkit-line-clamp: 1;
+  }
+
+  .card__vintage-star {
+    position: absolute;
+    left: 62.667%;
+    top: 74.524%;
+    width: 32.372%;
+    aspect-ratio: 1;
+    transform: rotate(13.12deg);
+    pointer-events: none;
+  }
+
+  .card__vintage-star img {
+    position: absolute;
+    left: 10.406%;
+    top: 8.366%;
+    width: 79.193%;
+    aspect-ratio: 76.9095 / 73.1453;
   }
 
   .card__serial {
@@ -1042,31 +1174,20 @@ body {
      viewport, because the same phone shows a near-full-width card on the
      contribute preview, and that one wants the desktop proportions.
 
-     At this size the card is re-proportioned around the words rather than the
-     picture, because a fun fact you can't finish reading is worse than a photo
-     an eighth smaller. The mat closes in, the flavour strip takes a bigger
-     share of the height, and every printed thing that is already legible on
-     the other face — the back's copy of the affiliation, the set mark — gives
-     up its room to the two answers and the fun fact. */
+     The fronts need almost nothing here: both are laid out in shares of the
+     card, so they shrink whole. Only the type that was already at its floor has
+     to give — the Vintage headline, which is the one thing on either front long
+     enough to overrun its box. The back is where the real re-proportioning
+     happens: everything already printed on the front gives up its room to the
+     answer. */
   @container (max-width: 190px) {
     .card__face {
       --frame: 3.2%;
-      --art-bottom: 38%;
     }
 
-    .card__plate {
-      padding: 0.4em 0.45em 0.35em;
-    }
-
-    .card__strip {
-      padding: 0.4em 0.45em;
-      gap: 0.15em;
-    }
-
-    .card__flavour {
-      font-size: 0.88em;
-      line-height: 1.25;
-      -webkit-line-clamp: 5;
+    .card__face--vintage .card__affil {
+      font-size: 1.45em;
+      line-height: 2.25;
     }
 
     .card__back {
@@ -1306,7 +1427,6 @@ body {
 
   /* The card's own strip and back are printed stock, so they stay light even on
      the dark stage. */
-  .stage .card__flavour,
   .stage .card__a {
     color: var(--color-ink);
   }
@@ -2138,6 +2258,67 @@ body {
 
   /* The radio itself is sr-only, so focus has to surface on the swatch. */
   input:focus-visible + .swatch {
+    outline: 3px solid var(--color-pool-deep);
+    outline-offset: 3px;
+  }
+
+  /* Card design picker. Each option is the card you are actually making, printed
+     at pocket size — the two fronts differ in where everything sits, so a colour
+     chip or a name could not tell you what you are choosing between. */
+  .design-choice {
+    display: grid;
+    justify-items: center;
+    gap: 0.4rem;
+    width: 5.5rem;
+    padding: 0.35rem;
+    border: 1px solid transparent;
+    border-radius: 0.35rem;
+  }
+
+  .design-choice[data-selected="true"] {
+    border-color: var(--color-ink);
+    box-shadow: 0 0 0 2px var(--color-ink);
+  }
+
+  /* Its own type container, so the mini front sizes off this box rather than
+     the full-size preview beside the form. Sized outright rather than by
+     aspect-ratio: .card inside asks for height: 100%, and a height derived from
+     a ratio is not a base it can resolve against. */
+  .design-choice__preview,
+  /* Both are spans, so they need this before width and height mean anything. */
+  .design-choice__preview > .card {
+    display: block;
+  }
+
+  .design-choice__preview {
+    position: relative;
+    width: 5.25rem;
+    height: 7.35rem;
+    container-type: inline-size;
+    pointer-events: none;
+  }
+
+  /* A true miniature. Everywhere else the card's type is clamped so a pocket
+     card stays readable; at tile size that floor is taller than the bands the
+     type sits in, and the layout you are choosing between stops being the thing
+     on screen. Nobody reads a tile — they look at where the blocks are. */
+  .design-choice__preview > .card {
+    font-size: 4.6cqi;
+  }
+
+  .design-choice__label {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-ink-soft);
+  }
+
+  .design-choice[data-selected="true"] .design-choice__label {
+    color: var(--color-ink);
+  }
+
+  input:focus-visible + .design-choice {
     outline: 3px solid var(--color-pool-deep);
     outline-offset: 3px;
   }

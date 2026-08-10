@@ -52,11 +52,9 @@ begin
   ------------------------------------------------------------------ 2
   -- Contributing mints exactly one grant.
   insert into cards (
-    pack_id, owner_id, photo_path, thumb_path, display_name,
-    prompt_1_key, prompt_1_answer, prompt_2_key, prompt_2_answer, fun_fact
+    pack_id, owner_id, photo_path, thumb_path, display_name, explanation
   ) values (
-    v_pack, v_alice, 'seed/01.png', 'seed/01.png', 'Alice Test',
-    'building', 'a', 'snack', 'b', 'c'
+    v_pack, v_alice, 'seed/01.png', 'seed/01.png', 'Alice Test', 'a'
   ) returning id into v_card_a;
 
   select count(*) into v_count
@@ -70,14 +68,12 @@ begin
   -- Up to five contributions are allowed; a sixth is rejected.
   for i in 2..5 loop
     insert into cards (
-      pack_id, owner_id, photo_path, thumb_path, display_name,
-      prompt_1_key, prompt_1_answer, prompt_2_key, prompt_2_answer, fun_fact
+      pack_id, owner_id, photo_path, thumb_path, display_name, explanation
     ) values (
       v_pack, v_alice,
       'aaaaaaaa-0000-4000-8000-00000000a11c/aaaaaaaa-0000-4000-8000-00000000000' || i || '/full.webp',
       'aaaaaaaa-0000-4000-8000-00000000a11c/aaaaaaaa-0000-4000-8000-00000000000' || i || '/thumb.webp',
-      'Alice Again',
-      'building', 'a', 'snack', 'b', 'c'
+      'Alice Again', 'a'
     );
   end loop;
 
@@ -89,14 +85,12 @@ begin
 
   begin
     insert into cards (
-      pack_id, owner_id, photo_path, thumb_path, display_name,
-      prompt_1_key, prompt_1_answer, prompt_2_key, prompt_2_answer, fun_fact
+      pack_id, owner_id, photo_path, thumb_path, display_name, explanation
     ) values (
       v_pack, v_alice,
       'aaaaaaaa-0000-4000-8000-00000000a11c/aaaaaaaa-0000-4000-8000-000000000006/full.webp',
       'aaaaaaaa-0000-4000-8000-00000000a11c/aaaaaaaa-0000-4000-8000-00000000a11c/thumb.webp',
-      'Alice Too Many',
-      'building', 'a', 'snack', 'b', 'c'
+      'Alice Too Many', 'a'
     );
     raise exception 'FAIL 3: a sixth contribution to the same pack was allowed';
   exception when sqlstate 'P0004' then
@@ -124,11 +118,9 @@ begin
   ------------------------------------------------------------------ 5
   -- Bob joins. Now Alice has exactly one eligible card.
   insert into cards (
-    pack_id, owner_id, photo_path, thumb_path, display_name,
-    prompt_1_key, prompt_1_answer, prompt_2_key, prompt_2_answer, fun_fact
+    pack_id, owner_id, photo_path, thumb_path, display_name, explanation
   ) values (
-    v_pack, v_bob, 'seed/03.png', 'seed/03.png', 'Bob Test',
-    'building', 'a', 'snack', 'b', 'c'
+    v_pack, v_bob, 'seed/03.png', 'seed/03.png', 'Bob Test', 'a'
   ) returning id into v_card_b;
 
   v_pulled := open_pack(v_pack);

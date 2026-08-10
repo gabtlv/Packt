@@ -2,7 +2,6 @@ import Image from "next/image";
 
 import { formatSerial, initials, prettyUrl } from "@/lib/cards";
 import type { CardRow } from "@/lib/database.types";
-import { promptLabel } from "@/lib/prompts";
 
 type Props = {
   card: CardRow;
@@ -15,8 +14,9 @@ type Props = {
 };
 
 /**
- * The card back: contact photo, affiliation, both prompt answers, favourite media
- * and one social link — the "how to actually find this person" side.
+ * The card back, shared by both fronts: contact photo, location, the one thing
+ * they said about their card, favourite media and one social link — the "how to
+ * actually find this person" side.
  */
 export function CardBack({ card, packName, avatarUrl, facingAway, id }: Props) {
   return (
@@ -58,13 +58,8 @@ export function CardBack({ card, packName, avatarUrl, facingAway, id }: Props) {
         </div>
 
         <div className="card__qa">
-          <span className="card__q">{promptLabel(card.prompt_1_key)}</span>
-          <span className="card__a">{card.prompt_1_answer}</span>
-        </div>
-
-        <div className="card__qa">
-          <span className="card__q">{promptLabel(card.prompt_2_key)}</span>
-          <span className="card__a">{card.prompt_2_answer}</span>
+          <span className="card__q">Explain your card</span>
+          <span className="card__a">{card.explanation}</span>
         </div>
 
         {card.favorite_media ? (

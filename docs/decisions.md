@@ -17,10 +17,19 @@ untransformed.
 This means **PRD success metric #2 is not met as written** — "a non-trivial
 transformation… clearly distinguishable from a plain uploaded photo". What carries it
 instead is the card *composition*: `components/card/` frames the photo in a keylined
-art window inside a coloured mat, lays a pointer-driven foil sheen over it, tilts it in
-3D, prints a serial and set name, and flips to a back with a printed emblem. A photo
-in that frame is not the photo you uploaded, but the transformation is typographic and
-material rather than generative.
+art window on a coloured mat, lays a pointer-driven foil sheen over it, tilts it in
+3D, and flips to a back with a printed emblem and a serial. A photo in that frame is
+not the photo you uploaded, but the transformation is typographic and material rather
+than generative.
+
+There are now two of those frames, not one — **Sporty** and **Vintage**, in
+`components/card/fronts/`, both drawn from Figma and chosen by the contributor. They
+share one back. Both are laid out in percentages of Figma's 300×420 frame, which is the
+5:7 the card shell already locks, so the same file scales from a nine-pocket thumbnail
+to the reveal. The parts Figma paints `#F5A524` are the ones that take the member's
+chosen colour, which is why that hex is exactly `--variant-amber`; `#14213D` is the
+photo window. Neither front prints flavour text or a serial any more — the form asks
+one question and the answer goes on the back.
 
 The seam for adding generation later is `lib/services/cards.ts`: it is the single place
 a card row is created, so a step deriving extra columns from `photo_path` slots in
@@ -72,7 +81,10 @@ on cream, and it reserves darkness for the single moment that should feel theatr
 
 Type is Archivo (display, heavy and tight, set-logo energy), Newsreader (card-back
 flavour text, as printed cards have always used), Space Mono (serials and set codes,
-stamped rather than typeset).
+stamped rather than typeset). Archivo is loaded as the variable font rather than a set
+of static cuts, because the card fronts need Archivo Black and Archivo Narrow — which
+are weight 900 and `font-stretch: 62%` on the same family. Alfa Slab One is loaded for
+one thing only: the Vintage front's headline.
 
 ## Verification notes
 

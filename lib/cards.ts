@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 
-import type { BorderVariant, CardRow } from "@/lib/database.types";
+import type { BorderVariant, CardDesign, CardRow } from "@/lib/database.types";
 
 /**
  * Maps a card's chosen border variant onto the two custom properties the card CSS
@@ -12,6 +12,11 @@ export function variantStyle(variant: BorderVariant): CSSProperties {
     ["--variant-deep" as string]: `var(--variant-${variant}-deep)`,
   };
 }
+
+export const CARD_DESIGN_LABELS: Record<CardDesign, string> = {
+  sporty: "Sporty",
+  vintage: "Vintage",
+};
 
 export const VARIANT_LABELS: Record<BorderVariant, string> = {
   amber: "Amber",

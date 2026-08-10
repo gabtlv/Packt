@@ -124,7 +124,6 @@ export function Card({
             <div className="card">
               <CardFront
                 card={card}
-                packName={packName}
                 size={size}
                 priority={priority}
                 facingAway={flipped}

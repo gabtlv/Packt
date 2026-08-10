@@ -1,12 +1,9 @@
-import Image from "next/image";
-
-import { formatSerial } from "@/lib/cards";
+import { SportyFront } from "@/components/card/fronts/SportyFront";
+import { VintageFront } from "@/components/card/fronts/VintageFront";
 import type { CardRow } from "@/lib/database.types";
-import { resolvePhotoUrl } from "@/lib/images";
 
 type Props = {
   card: CardRow;
-  packName: string;
   /** Grid cards load the small derivative; a featured card loads the full one. */
   size?: "thumb" | "full";
   priority?: boolean;
@@ -20,62 +17,39 @@ type Props = {
 };
 
 /**
- * The card front. The photo is used exactly as uploaded — the frame, keylined art
- * window, scrimmed nameplate and flavour strip are what make it read as a card.
+ * The card front. The photo is used exactly as uploaded — the framing is what
+ * makes it read as a card, and there are two framings to choose from.
+ *
+ * This component owns everything the two designs share (the face box, the
+ * accessibility state when turned away, the foil and gloss passes) so a design
+ * only has to describe its own printing. Pack name and serial are not on either
+ * front; they live on the back.
  */
 export function CardFront({
   card,
-  packName,
   size = "thumb",
   priority,
   facingAway,
   photoUrl,
 }: Props) {
-  const path = size === "full" ? card.photo_path : card.thumb_path;
+  // An unrecognised value still has to render something — a card in the binder
+  // is not the place to discover a typo in the database.
+  const design = card.card_design === "vintage" ? "vintage" : "sporty";
+  const Design = design === "vintage" ? VintageFront : SportyFront;
 
   return (
     <div
-      className="card__face"
+      className={`card__face card__face--${design}`}
       data-rarity={card.rarity}
       aria-hidden={facingAway}
       inert={facingAway ? true : undefined}
     >
-      <div className="card__art">
-        {photoUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element -- blob: URLs can't be optimised
-          <img src={photoUrl} alt="" />
-        ) : path ? (
-          <Image
-            src={resolvePhotoUrl(path)}
-            alt={`${card.display_name}'s card photo`}
-            width={size === "full" ? 1200 : 400}
-            height={size === "full" ? 1680 : 560}
-            // Phones show the sheet two-up, so a pocket card is ~46vw there.
-            sizes={size === "full" ? "420px" : "(max-width: 640px) 46vw, 220px"}
-            priority={priority}
-          />
-        ) : (
-          // The contribute preview renders before a photo is chosen, so there is a
-          // real state with no image path at all. Without this branch next/image
-          // gets an empty src and throws.
-          <span className="card__art-empty">Your photo</span>
-        )}
-      </div>
-
-      <div className="card__plate">
-        <span className="card__name">{card.display_name}</span>
-        {card.school_or_work ? (
-          <span className="card__affil">{card.school_or_work}</span>
-        ) : null}
-      </div>
-
-      <div className="card__strip">
-        <p className="card__flavour">{card.fun_fact}</p>
-        <div className="card__footer">
-          <span>{packName}</span>
-          <span className="card__serial">{formatSerial(card.serial)}</span>
-        </div>
-      </div>
+      <Design
+        card={card}
+        size={size}
+        priority={priority}
+        photoUrl={photoUrl}
+      />
 
       <div className="card__foil" aria-hidden="true" />
       {/* Specular band, swept across the face only while the card is turning.

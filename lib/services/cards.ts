@@ -47,15 +47,12 @@ export async function contributeCard(
       photo_path: input.photo_path,
       thumb_path: input.thumb_path,
       border_variant: input.border_variant,
+      card_design: input.card_design,
       school_or_work: input.school_or_work,
+      explanation: input.explanation,
       favorite_media: input.favorite_media,
       social_label: input.social_label,
       social_url: input.social_url,
-      prompt_1_key: input.prompt_1_key,
-      prompt_1_answer: input.prompt_1_answer,
-      prompt_2_key: input.prompt_2_key,
-      prompt_2_answer: input.prompt_2_answer,
-      fun_fact: input.fun_fact,
     })
     .select("*")
     .single();

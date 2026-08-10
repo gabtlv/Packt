@@ -4,11 +4,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { Card } from "@/components/card/Card";
-import { VARIANT_LABELS } from "@/lib/cards";
-import type { BorderVariant, CardRow } from "@/lib/database.types";
+import { CardFront } from "@/components/card/CardFront";
+import { CARD_DESIGN_LABELS, VARIANT_LABELS, variantStyle } from "@/lib/cards";
+import type { BorderVariant, CardDesign, CardRow } from "@/lib/database.types";
 import { PhotoTooLargeError, uploadCardPhoto } from "@/lib/images";
-import { PROMPTS } from "@/lib/prompts";
-import { BORDER_VARIANTS, contributeSchema } from "@/lib/schemas";
+import { BORDER_VARIANTS, CARD_DESIGNS, contributeSchema } from "@/lib/schemas";
 import { MAX_CARDS_PER_PACK } from "@/lib/services/packs";
 import { createClient } from "@/lib/supabase/client";
 
@@ -24,15 +24,13 @@ type Props = {
 
 type Fields = {
   display_name: string;
+  card_design: CardDesign;
   border_variant: BorderVariant;
+  /** Labelled "Location" — the column name predates the rename. */
   school_or_work: string;
+  explanation: string;
   favorite_media: string;
   social_url: string;
-  prompt_1_key: string;
-  prompt_1_answer: string;
-  prompt_2_key: string;
-  prompt_2_answer: string;
-  fun_fact: string;
 };
 
 /**
@@ -51,15 +49,12 @@ export function ContributeForm({
   const router = useRouter();
   const [fields, setFields] = useState<Fields>(() => ({
     display_name: suggestedName,
+    card_design: "sporty",
     border_variant: "amber",
     school_or_work: "",
+    explanation: "",
     favorite_media: "",
     social_url: "",
-    prompt_1_key: PROMPTS[0].key,
-    prompt_1_answer: "",
-    prompt_2_key: PROMPTS[1].key,
-    prompt_2_answer: "",
-    fun_fact: "",
   }));
   const [photo, setPhoto] = useState<{ file: File; url: string } | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -101,17 +96,21 @@ export function ContributeForm({
       photo_path: "",
       thumb_path: "",
       border_variant: fields.border_variant,
+      card_design: fields.card_design,
       rarity: "common",
       display_name: fields.display_name || "Your name",
-      school_or_work: fields.school_or_work || null,
+      school_or_work: fields.school_or_work || "Your location",
+      explanation: fields.explanation || "What your card is about.",
       favorite_media: fields.favorite_media || null,
       social_label: null,
       social_url: fields.social_url || null,
-      prompt_1_key: fields.prompt_1_key,
-      prompt_1_answer: fields.prompt_1_answer || "…",
-      prompt_2_key: fields.prompt_2_key,
-      prompt_2_answer: fields.prompt_2_answer || "…",
-      fun_fact: fields.fun_fact || "Your fun fact lands here.",
+      // Retired by migration 0009; nothing reads them, but the row type still
+      // describes what the table returns.
+      prompt_1_key: null,
+      prompt_1_answer: null,
+      prompt_2_key: null,
+      prompt_2_answer: null,
+      fun_fact: null,
       created_at: new Date().toISOString(),
     }),
     [fields, userId],
@@ -134,15 +133,12 @@ export function ContributeForm({
       const parsed = contributeSchema.safeParse({
         ...paths,
         display_name: fields.display_name,
+        card_design: fields.card_design,
         border_variant: fields.border_variant,
         school_or_work: fields.school_or_work,
+        explanation: fields.explanation,
         favorite_media: fields.favorite_media,
         social_url: fields.social_url,
-        prompt_1_key: fields.prompt_1_key,
-        prompt_1_answer: fields.prompt_1_answer,
-        prompt_2_key: fields.prompt_2_key,
-        prompt_2_answer: fields.prompt_2_answer,
-        fun_fact: fields.fun_fact,
       });
 
       if (!parsed.success) {
@@ -176,8 +172,6 @@ export function ContributeForm({
     }
   }
 
-  const promptTwoOptions = PROMPTS.filter((p) => p.key !== fields.prompt_1_key);
-
   return (
     <div className="grid gap-10 lg:grid-cols-[1fr_20rem]">
       <form onSubmit={onSubmit} className="grid gap-6" noValidate>
@@ -209,21 +203,58 @@ export function ContributeForm({
         </div>
 
         <div className="field">
-          <label htmlFor="display_name">Name on card</label>
+          <label htmlFor="display_name">Name</label>
           <input
             id="display_name"
             value={fields.display_name}
             maxLength={40}
             onChange={(e) => set("display_name", e.target.value)}
-            placeholder="Alex Rivera"
+            placeholder="Alex"
             autoComplete="nickname"
             required
           />
           <p className="field__hint">
-            Shown on the front and back. Edit freely — it doesn&apos;t have to
-            match your Google account.
+            Shown on the front and back. Whatever you go by — it doesn&apos;t
+            have to match your Google account.
           </p>
         </div>
+
+        <fieldset className="field">
+          <legend className="field__label">Design</legend>
+          <div className="mt-2 flex flex-wrap gap-3">
+            {CARD_DESIGNS.map((design) => (
+              <label key={design} className="cursor-pointer">
+                <input
+                  type="radio"
+                  name="card_design"
+                  value={design}
+                  checked={fields.card_design === design}
+                  onChange={() => set("card_design", design)}
+                  className="sr-only"
+                />
+                <span
+                  className="design-choice"
+                  data-selected={fields.card_design === design}
+                >
+                  <span
+                    className="design-choice__preview"
+                    style={variantStyle(fields.border_variant)}
+                  >
+                    <span className="card">
+                      <CardFront
+                        card={{ ...previewCard, card_design: design }}
+                        photoUrl={photo?.url}
+                      />
+                    </span>
+                  </span>
+                  <span className="design-choice__label">
+                    {CARD_DESIGN_LABELS[design]}
+                  </span>
+                </span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
 
         <fieldset className="field">
           <legend className="field__label">Border</legend>
@@ -250,47 +281,31 @@ export function ContributeForm({
           </div>
         </fieldset>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <PromptField
-            index={1}
-            options={PROMPTS}
-            selectedKey={fields.prompt_1_key}
-            answer={fields.prompt_1_answer}
-            onKeyChange={(k) => set("prompt_1_key", k)}
-            onAnswerChange={(v) => set("prompt_1_answer", v)}
-          />
-          <PromptField
-            index={2}
-            options={promptTwoOptions}
-            selectedKey={fields.prompt_2_key}
-            answer={fields.prompt_2_answer}
-            onKeyChange={(k) => set("prompt_2_key", k)}
-            onAnswerChange={(v) => set("prompt_2_answer", v)}
-          />
-        </div>
-
         <div className="field">
-          <label htmlFor="fun_fact">One fun fact</label>
-          <input
-            id="fun_fact"
-            value={fields.fun_fact}
-            maxLength={160}
-            onChange={(e) => set("fun_fact", e.target.value)}
-            placeholder="I once ran a half marathon by accident. I got lost."
+          <label htmlFor="explanation">Explain your card:</label>
+          <textarea
+            id="explanation"
+            rows={3}
+            value={fields.explanation}
+            maxLength={200}
+            onChange={(e) => set("explanation", e.target.value)}
+            placeholder="Taken thirty seconds before I fell in. Worth it."
             required
           />
-          <p className="field__hint">This is the flavour text on the card front.</p>
+          <p className="field__hint">
+            The only question we ask. It&apos;s printed on the back of your card.
+          </p>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="field">
-            <label htmlFor="school_or_work">School or work</label>
+            <label htmlFor="school_or_work">Location</label>
             <input
               id="school_or_work"
               value={fields.school_or_work}
               maxLength={80}
               onChange={(e) => set("school_or_work", e.target.value)}
-              placeholder="Georgia Tech"
+              placeholder="Atlanta, GA"
             />
           </div>
 
@@ -348,49 +363,6 @@ export function ContributeForm({
           </p>
         ) : null}
       </aside>
-    </div>
-  );
-}
-
-function PromptField({
-  index,
-  options,
-  selectedKey,
-  answer,
-  onKeyChange,
-  onAnswerChange,
-}: {
-  index: number;
-  options: readonly { key: string; label: string; placeholder: string }[];
-  selectedKey: string;
-  answer: string;
-  onKeyChange: (key: string) => void;
-  onAnswerChange: (value: string) => void;
-}) {
-  const selected = options.find((o) => o.key === selectedKey) ?? options[0];
-
-  return (
-    <div className="field">
-      <label htmlFor={`prompt-${index}`}>Question {index}</label>
-      <select
-        id={`prompt-${index}`}
-        value={selectedKey}
-        onChange={(e) => onKeyChange(e.target.value)}
-      >
-        {options.map((option) => (
-          <option key={option.key} value={option.key}>
-            {option.label}
-          </option>
-        ))}
-      </select>
-      <input
-        aria-label={`Answer to: ${selected?.label ?? ""}`}
-        value={answer}
-        maxLength={160}
-        onChange={(e) => onAnswerChange(e.target.value)}
-        placeholder={selected?.placeholder}
-        required
-      />
     </div>
   );
 }
